@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Marktradar">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+
+<title>Marktradar Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: Lagezentrum bei Nacht. Links die Weltkugel als Hauptbühne, rechts Detail + Brennpunktliste, oben ein Kennzahlenband, unten der Terminkalender. Bewusst nur ein dunkles Thema. */
+:root{
+  color-scheme: dark;
+  --bg:#0c1220;
+  --panel:#131b2c;
+  --panel-2:#182237;
+  --line:#25304a;
+  --fg:#e7eaf2;
+  --muted:#8e98ae;
+  --accent:#9db4ff;
+  --crit:#ff5b4f;
+  --watch:#f0a93a;
+  --calm:#4fc3a1;
+  --ocean-a:#13203a;
+  --ocean-b:#090e19;
+  --land:#24314b;
+  --border:#38476a;
+  --grid:rgba(157,180,255,.08);
+  --font-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--font-body);font-size:15px;line-height:1.5}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible,canvas:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1360px;margin:0 auto;padding-inline:clamp(16px,3vw,32px);padding-block:20px 40px;display:flex;flex-direction:column;gap:18px}
+
+/* Kopf */
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+.brand h1{margin:0;font-family:var(--font-display);font-weight:700;font-size:clamp(30px,4.2vw,44px);letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.brand h1 span{color:var(--crit)}
+.stand{margin:6px 0 0;font-family:var(--font-mono);font-size:12.5px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+.lg{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 11px 4px 9px}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.dot.kritisch{background:var(--crit);box-shadow:0 0 0 3px color-mix(in srgb,var(--crit) 25%,transparent)}
+.dot.beobachten{background:var(--watch)}
+.dot.ruhig{background:var(--calm)}
+
+/* Kennzahlen */
+.ticker{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow-x:auto;scrollbar-width:thin}
+.tk{background:var(--panel);padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tk-l{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tk-v{font-family:var(--font-mono);font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tk-m{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);line-height:1.35}
+.up{color:var(--calm)}.down{color:var(--crit)}
+
+/* Filter */
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filters .lbl{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.chip{font:500 13px var(--font-body);color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#0c1220}
+
+/* Hauptbereich */
+.main{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:920px){.main{grid-template-columns:minmax(0,1fr)}}
+.stage{position:relative;background:radial-gradient(ellipse at 50% 45%,#16223a 0%,var(--bg) 70%);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.globe-box{width:100%;aspect-ratio:1/1;max-height:76vh;display:grid;place-items:center}
+canvas{display:block;touch-action:none;cursor:grab}
+canvas.dragging{cursor:grabbing}
+.ov{position:absolute;font-family:var(--font-mono);font-size:12px;color:var(--muted);pointer-events:none}
+.ov.tl{top:12px;left:14px;display:flex;flex-direction:column;gap:4px}
+.ov.bl{bottom:12px;left:14px}
+.ov.br{bottom:12px;right:14px;text-align:right}
+.ov b{font-weight:500;color:var(--fg)}
+.count{display:flex;gap:12px}
+.count span{display:inline-flex;align-items:center;gap:6px}
+.nomap{position:absolute;inset:auto 14px 40px 14px;font-size:12.5px;color:var(--watch);text-align:center}
+
+/* Seitenleiste */
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.detail{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:12px}
+.d-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:7px;font:600 11.5px var(--font-body);letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;border:1px solid}
+.pill.kritisch{color:var(--crit);border-color:color-mix(in srgb,var(--crit) 55%,transparent);background:color-mix(in srgb,var(--crit) 12%,transparent)}
+.pill.beobachten{color:var(--watch);border-color:color-mix(in srgb,var(--watch) 55%,transparent);background:color-mix(in srgb,var(--watch) 10%,transparent)}
+.pill.ruhig{color:var(--calm);border-color:color-mix(in srgb,var(--calm) 55%,transparent);background:color-mix(in srgb,var(--calm) 10%,transparent)}
+.coords{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.detail h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:30px;letter-spacing:.02em;line-height:1.05;text-wrap:balance}
+.why{margin:0;color:var(--muted);font-size:14px;max-width:62ch}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:12px;color:var(--fg);background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+.news{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:12px}
+.news li{display:flex;flex-direction:column;gap:3px}
+.n-date{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.n-title{font-weight:600;font-size:15px;line-height:1.35}
+.n-text{font-size:14px;color:#c7cdda;max-width:62ch}
+.n-src{font-size:12.5px}
+
+.list{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px}
+.list h3{margin:6px 10px 8px;font:600 12px var(--font-body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.list ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.row{width:100%;display:grid;grid-template-columns:4px minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;background:transparent;border:0;border-radius:8px;padding:9px 10px 9px 0;color:var(--fg);cursor:pointer;font:inherit}
+.row:hover{background:var(--panel-2)}
+.row[aria-current="true"]{background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--accent)}
+.stripe{align-self:stretch;border-radius:0 3px 3px 0}
+.stripe.kritisch{background:var(--crit)}.stripe.beobachten{background:var(--watch)}.stripe.ruhig{background:var(--calm)}
+.r-main{min-width:0;display:flex;flex-direction:column}
+.r-place{font-size:12px;color:var(--muted)}
+.r-head{font-size:14px;font-weight:500;line-height:1.35}
+.r-sev{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.empty{padding:14px 10px;color:var(--muted);font-size:14px}
+
+/* Termine */
+.cal h3{margin:0 0 10px;font:600 12px var(--font-body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cal ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.cal li{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.c-d{font-family:var(--font-display);font-weight:600;font-size:20px;letter-spacing:.03em}
+.c-t{font-size:13.5px;line-height:1.35}
+.c-n{font-size:12px;color:var(--muted)}
+
+.foot{border-top:1px solid var(--line);padding-top:14px;font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:6px;max-width:90ch}
+.foot p{margin:0}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+
+/* ---------- Live-Bereich ---------- */
+.tape{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel);min-height:46px}
+.live{display:flex;flex-direction:column;gap:12px}
+.live-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px}
+.live-head h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:26px;letter-spacing:.06em;text-transform:uppercase}
+.conn{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+.conn .led{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.conn.on .led{background:var(--calm);box-shadow:0 0 0 3px color-mix(in srgb,var(--calm) 25%,transparent);animation:blink 2s ease-in-out infinite}
+.conn.off .led{background:var(--crit)}
+@keyframes blink{50%{opacity:.35}}
+.coins{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.coin{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:6px;min-width:0;cursor:pointer;text-align:left;color:var(--fg);font:inherit}
+.coin:hover{border-color:var(--accent)}
+.coin[aria-pressed="true"]{box-shadow:inset 0 0 0 1px var(--accent);border-color:var(--accent)}
+.c-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.c-name{font-weight:600;font-size:14px}
+.c-pair{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.c-price{font-family:var(--font-mono);font-size:26px;font-variant-numeric:tabular-nums;line-height:1.1;transition:color .6s ease;white-space:nowrap}
+.c-price.flash-up{color:var(--calm);transition:none}
+.c-price.flash-down{color:var(--crit);transition:none}
+.c-row{display:flex;justify-content:space-between;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.c-chg.up{color:var(--calm)}.c-chg.down{color:var(--crit)}
+.spark{width:100%;height:54px;display:block}
+.chart-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tv{height:min(560px,70vh);min-height:380px;border-radius:8px;overflow:hidden}
+.tv-note{font-size:12px;color:var(--muted);margin:0 4px}
+</style>
+</head>
+<body style="margin:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)">
+
+<div class="wrap">
+  <header class="head">
+    <div class="brand">
+      <h1>Markt<span>radar</span></h1>
+      <p class="stand">Kurse live · Weltkugel &amp; News: Stand 12.10.2026</p>
+    </div>
+    <div class="legend" aria-label="Legende">
+      <span class="lg"><span class="dot kritisch"></span>Kritisch</span>
+      <span class="lg"><span class="dot beobachten"></span>Beobachten</span>
+      <span class="lg"><span class="dot ruhig"></span>Ruhig</span>
+    </div>
+  </header>
+
+  <section class="tape" aria-label="Laufendes Kursband">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {
+        "symbols": [
+          {"proName": "BINANCE:BTCUSDT", "title": "Bitcoin"},
+          {"proName": "BINANCE:ETHUSDT", "title": "Ethereum"},
+          {"proName": "OANDA:XAUUSD", "title": "Gold"},
+          {"proName": "TVC:UKOIL", "title": "Brent"},
+          {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
+          {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
+          {"proName": "XETR:DAX", "title": "DAX"},
+          {"proName": "FX:EURUSD", "title": "EUR/USD"},
+          {"proName": "TVC:US10Y", "title": "US 10J Rendite"}
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": true,
+        "displayMode": "adaptive",
+        "colorTheme": "dark",
+        "locale": "de_DE"
+      }
+      </script>
+    </div>
+  </section>
+
+  <section class="live" aria-label="Live-Kurse">
+    <div class="live-head">
+      <h2>Live</h2>
+      <span class="conn" id="conn"><span class="led"></span><span id="connText">verbinde mit Binance …</span></span>
+    </div>
+    <div class="coins" id="coins"></div>
+    <div class="chart-card">
+      <div class="tabs" id="chartTabs" aria-label="Chart wählen"></div>
+      <div class="tv" id="tvChart"></div>
+      <p class="tv-note">Chart von TradingView, 1-Minuten-Kerzen. Krypto in Echtzeit, Aktien und Indizes teils verzögert. Symbol oben im Chart änderbar.</p>
+    </div>
+  </section>
+
+  <div class="live-head"><h2>Weltlage</h2><span class="conn">News Stand 12.10.2026</span></div>
+  <nav class="filters" id="filters" aria-label="Nach Markt filtern"><span class="lbl">Markt</span></nav>
+
+  <section class="main">
+    <div class="stage">
+      <div class="globe-box" id="globeBox">
+        <canvas id="globe" tabindex="0" aria-label="Drehbare Weltkugel mit Brennpunkten. Auswahl auch über die Liste möglich."></canvas>
+      </div>
+      <div class="ov tl"><div class="count" id="count"></div></div>
+      <div class="ov bl">Ziehen zum Drehen · Punkt antippen</div>
+      <p class="nomap" id="nomap" hidden>Kartendaten konnten nicht geladen werden. Die Punkte und die Liste funktionieren trotzdem.</p>
+    </div>
+
+    <aside class="side">
+      <article class="detail" id="detail" aria-live="polite"></article>
+      <div class="list">
+        <h3>Brennpunkte</h3>
+        <ul id="list"></ul>
+      </div>
+    </aside>
+  </section>
+
+  <section class="cal">
+    <h3>Termine, die den Markt bewegen können</h3>
+    <ol id="cal"></ol>
+  </section>
+
+  <footer class="foot">
+    <p>Keine Anlageberatung. Die Einstufung kritisch, beobachten oder ruhig ist eine Einschätzung der Nachrichtenlage, kein Kauf- oder Verkaufssignal. Kurse sind Momentaufnahmen mit Datum und können inzwischen anders stehen.</p>
+    <p>Die Weltkugel und die News in dieser Datei bleiben auf dem Stand vom 12.10.2026. Die täglich aktualisierte Version findest du im <a href="https://claude.ai/artifact/99Vec8d7jmUgXnPpARvEVz" target="_blank" rel="noopener">Online-Marktradar</a>.</p>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datamaps/0.5.9/datamaps.world.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ---------- Daten ---------- */
+const MARKETS = {
+  oel:"Öl & Energie", aktien:"Aktien", anleihen:"Zinsen & Anleihen",
+  waehrung:"Währungen", krypto:"Krypto", rohstoffe:"Gold & Rohstoffe"
+};
+const SEV_ORDER = {kritisch:0, beobachten:1, ruhig:2};
+const SEV_LABEL = {kritisch:"Kritisch", beobachten:"Beobachten", ruhig:"Ruhig"};
+
+const SRC = {
+  engine9:{name:"Engine (9. Okt)", url:"https://engine.online/news/brent-declines-after-trump-sets-delayed-timeline-for-resuming-strikes-on-iran-8284"},
+  engine5:{name:"Engine (5. Okt)", url:"https://engine.online/news/brent-gains-as-more-tankers-face-air-assaults-823a"},
+  sabah:{name:"Daily Sabah", url:"https://www.dailysabah.com/world/americas/trump-reportedly-weighing-fresh-iran-strikes-before-midterms/amp"},
+  newsbytes:{name:"NewsBytes", url:"https://www.newsbytesapp.com/news/world/tanker-attacked-off-qatar-coast-oil-tops-100-a-barrel/tldr"},
+  tracker:{name:"Oil Crisis Monitor (4. Okt)", url:"https://www.goodcarbadcar.net/tag/jaguar-x/"},
+  lanacion:{name:"La Nación / AP", url:"https://www.lanacion.com.ar/usa/how-major-us-stock-indexes-fared-friday-1092026-nid09102026/"},
+  gnews:{name:"Google News Übersicht", url:"https://news.google.com/stories/CAAqNggKIjBDQklTSGpvSmMzUnZjbmt0TXpZd1NoRUtEd2lDXzdpUUVoRTFxTU1kLWVETklDZ0FQAQ"},
+  investrade9:{name:"Investrade (9. Okt)", url:"https://investrade.com/?p=1607"},
+  investrade5:{name:"Investrade (5. Okt)", url:"https://investrade.com/?p=1595"},
+  political:{name:"Political.org Energie", url:"https://political.org/category/policy-news/energy/"},
+  delta:{name:"deltavalue.de", url:"https://www.deltavalue.de/ezb-zinsentscheid/"},
+  monster:{name:"mydealz-Magazin EZB", url:"https://www.monsterdealz.de/magazin/ezb-leitzins"},
+  ziro:{name:"Ziro Market", url:"https://ziromarket.com/blog/stock-market-october-2026-what-to-watch"},
+  ifc:{name:"IFC Markets", url:"https://www.ifcmarkets.com/de/company-news/trading-schedule-changes-october-12-2026"},
+  bnp:{name:"BNP Paribas Wealth (Juli)", url:"https://wealthmanagement.bnpparibas.com/asia/en/insights/podcasts-hub/podcast-snapshot-why-should-the-yen-rebound.html"},
+  focus:{name:"Focus Taiwan", url:"https://focustaiwan.tw/society/202206200006"},
+  crypto:{name:"Interactive Crypto", url:"https://www.interactivecrypto.com/el/team/ja-opinion-correspondent"},
+  gold:{name:"thetrading.tools", url:"https://www.thetrading.tools/gold-price"},
+  coingabbar:{name:"CoinGabbar", url:"https://www.coingabbar.com/en/crypto-news-october-2026-bitcoin-price-btc-eth-uptober-trends"},
+  magpie:{name:"MoneyMagpie", url:"https://www.moneymagpie.com/?p=236891"}
+};
+
+const HOTSPOTS = [
+  {id:"hormus", name:"Straße von Hormus", place:"Iran / Oman", lat:26.57, lon:56.25, sev:"kritisch",
+   markets:["oel"], iso:["OMN"],
+   why:"Hier läuft normalerweise rund ein Fünftel des Weltöls durch. Jeder Angriff treibt den Ölpreis.",
+   items:[
+    {date:"7.–9. Okt", title:"Meerenge faktisch dicht, Angriffe auf Tanker nehmen zu", text:"Die britische Seesicherheitsbehörde UKMTO zählte im Oktober bereits neun Angriffe. Am Mittwoch wurde ein Tanker von mehreren Geschossen getroffen, es gab Opfer.", src:"engine9"},
+    {date:"9. Okt", title:"USA sanktionieren 17 weitere Schiffe der Schattenflotte", text:"Die Schiffe sollen trotz Sanktionen iranisches Öl und Petrochemie transportieren.", src:"engine9"},
+    {date:"5. Okt", title:"G7 geben Notreserven frei", text:"Bis zu 100 Mio. Barrel aus strategischen Reserven sollen über vier Monate auf den Markt kommen. Das dämpft den Preis etwas.", src:"engine5"}
+   ]},
+  {id:"iran", name:"Iran / USA", place:"Teheran", lat:35.69, lon:51.39, sev:"kritisch",
+   markets:["oel","aktien"], iso:["IRN"],
+   why:"Neue Militärschläge würden Öl sofort weiter verteuern und Aktien unter Druck setzen.",
+   items:[
+    {date:"7.–8. Okt", title:"Pentagon soll Optionen für neue Angriffe vorlegen", text:"Laut Berichten will das Weiße Haus Angriffsoptionen vor den US-Zwischenwahlen am 3. November sehen. Ein Datum ist nicht festgelegt.", src:"sabah"},
+    {date:"9. Okt", title:"Späterer Zeitplan lässt Öl etwas fallen", text:"Brent gab um gut 1 $ auf rund 103 $ nach, nachdem Trump einen späteren Zeitplan für die Angriffe nannte.", src:"engine9"}
+   ]},
+  {id:"katar", name:"Persischer Golf", place:"Vor Katar", lat:25.6, lon:52.2, sev:"kritisch",
+   markets:["oel"], iso:["QAT"],
+   why:"Angriffe auf Öl- und Gastanker im Golf halten den Ölpreis über 100 $.",
+   items:[
+    {date:"7. Okt", title:"Tanker vor Katar angegriffen, Öl über 100 $", text:"Allein letzte Woche gab es mindestens zwölf Vorfälle mit Tankern. Die USA haben einen dritten Flugzeugträger in die Region geschickt.", src:"newsbytes"}
+   ]},
+  {id:"saudi", name:"Saudi-Arabien", place:"Riad", lat:24.71, lon:46.68, sev:"kritisch",
+   markets:["oel"], iso:["SAU"],
+   why:"Treffer auf Raffinerien des größten Exporteurs verknappen das Angebot zusätzlich.",
+   items:[
+    {date:"3.–4. Okt", title:"Feuer an Aramco-Raffinerie nach Huthi-Angriff", text:"Südlich von Riad wurden nach einem von den Huthis beanspruchten Angriff Flammen an einer Aramco-Raffinerie gesehen.", src:"tracker"}
+   ]},
+  {id:"usa", name:"USA: Anleihen & Aktien", place:"New York", lat:40.71, lon:-74.0, sev:"kritisch",
+   markets:["anleihen","aktien"], iso:["USA"],
+   why:"Die Zinsen auf US-Staatsanleihen sind so hoch wie seit Jahrzehnten nicht. Das kann Aktien und Krypto schnell bremsen.",
+   items:[
+    {date:"8.–9. Okt", title:"US-Rendite auf höchstem Stand seit 2002", text:"Die Rendite der 10-jährigen US-Anleihe stieg am Freitag auf 5,24 %.", src:"lanacion"},
+    {date:"9. Okt", title:"Aktien trotzdem mit Rekordwoche", text:"S&P 500 +0,6 % auf 7.811,54, Dow +0,8 %, Nasdaq +0,6 %. Auf Wochensicht liegt der S&P 500 1,2 % im Plus.", src:"lanacion"},
+    {date:"8. Okt", title:"Tech wackelt wegen KI-Umsatzsorgen", text:"Der Nasdaq verlor am Donnerstag 1,25 %, Nvidia gab nach. Steigender Ölpreis und Renditen weckten Inflationssorgen.", src:"investrade9"},
+    {date:"bis 7. Okt", title:"Anleger ziehen Geld aus US-Aktienfonds", text:"Nach zwei Wochen mit Zuflüssen gab es wieder Abflüsse, aus Sorge vor hohen Renditen und teurem Öl.", src:"investrade9"}
+   ]},
+  {id:"golf-mex", name:"Golf von Mexiko", place:"US-Ölförderung", lat:26.5, lon:-90.5, sev:"beobachten",
+   markets:["oel"], iso:[],
+   why:"Wenn ein Hurrikan Plattformen stilllegt, fällt US-Förderung kurzfristig aus.",
+   items:[
+    {date:"8. Okt", title:"Hurrikan Isaias bedroht Förderung", text:"Der Sturm kam zusätzlich zu den Tankerangriffen und trieb den Ölpreis am Donnerstag mit an.", src:"political"}
+   ]},
+  {id:"omsk", name:"Russland", place:"Omsk", lat:54.99, lon:73.37, sev:"beobachten",
+   markets:["oel"], iso:["RUS"],
+   why:"Ausfälle bei russischen Raffinerien verknappen Diesel und Benzin weltweit.",
+   items:[
+    {date:"8. Okt", title:"Ukraine trifft Russlands größte Raffinerie", text:"Laut ukrainischem Militär wurde die von Gazprom Neft betriebene Anlage in Omsk getroffen.", src:"political"}
+   ]},
+  {id:"ezb", name:"Eurozone / EZB", place:"Frankfurt", lat:50.11, lon:8.68, sev:"beobachten",
+   markets:["anleihen","waehrung"], iso:["DEU"],
+   why:"Steigende Energiepreise halten die Inflation hoch. Die EZB könnte die Zinsen weiter anheben.",
+   items:[
+    {date:"10. Sept", title:"EZB erhöhte Einlagesatz auf 2,50 %", text:"Grund ist der Energiepreisschock durch den Nahost-Krieg. Die Inflation im Euroraum lag im August bei 3,3 %.", src:"monster"},
+    {date:"29. Okt", title:"Nächster Zinsentscheid am 29. Oktober", text:"Die Entscheidung kommt um 14:15 Uhr. Offen ist, ob ein weiterer Schritt folgt oder die EZB abwartet.", src:"delta"}
+   ]},
+  {id:"indien", name:"Indien", place:"Mumbai", lat:19.08, lon:72.88, sev:"beobachten",
+   markets:["aktien","oel"], iso:["IND"],
+   why:"Indien importiert viel Öl. Teures Öl und mögliche Russland-Strafzölle treffen den Markt doppelt.",
+   items:[
+    {date:"8. Okt", title:"Ölabhängige Aktien fallen", text:"HPCL, BPCL und IndiGo gehörten zu den Verlierern, als Brent über 104 $ stieg.", src:"gnews"},
+    {date:"1. Okt", title:"Nifty 50 auf Sechsmonatstief", text:"Der Index fiel auf 22.421,95 Punkte. Rund um den 12. Oktober kommen die Inflationsdaten für September.", src:"ziro"}
+   ]},
+  {id:"taiwan", name:"Taiwan", place:"Taipeh", lat:25.03, lon:121.56, sev:"beobachten",
+   markets:["aktien"], iso:["TWN"],
+   why:"Wichtig für Chips und KI. Wirtschaftlich stark, aber politischer Druck aus Peking.",
+   items:[
+    {date:"8. Okt", title:"Exporte im September auf Rekordhoch", text:"Das Exportwachstum hält damit seit 35 Monaten an.", src:"focus"},
+    {date:"8. Okt", title:"Streit mit Peking um Wahlkampfauftritt", text:"Taiwans Festlandbehörde kritisierte Drohungen Pekings im Zusammenhang mit einem Wahlkampfauftritt.", src:"focus"}
+   ]},
+  {id:"china", name:"China", place:"Peking", lat:39.9, lon:116.4, sev:"ruhig",
+   markets:["aktien"], iso:["CHN"],
+   why:"Gerade keine akute Marktnachricht, eher Regulierung im Hintergrund.",
+   items:[
+    {date:"9. Okt", title:"Neue Regeln für sichere KI", text:"China will Überwachungs-, Frühwarn- und Notfallsysteme aufbauen, damit KI kontrollierbar bleibt.", src:"investrade9"}
+   ]},
+  {id:"japan", name:"Japan", place:"Tokio", lat:35.68, lon:139.69, sev:"ruhig",
+   markets:["aktien","waehrung"], iso:["JPN"],
+   why:"Heute Feiertag. Im Blick bleibt der schwache Yen.",
+   items:[
+    {date:"12. Okt", title:"Börse wegen Feiertag geschlossen", text:"Japanische Aktien und der Nikkei werden heute nicht gehandelt.", src:"ifc"},
+    {date:"Stand Juli", title:"Yen schwach, Zinsschritt im Oktober erwartet", text:"Im Sommer lag der Dollar bei rund 162 Yen. Analysten rechneten mit dem nächsten Zinsschritt der Bank of Japan im Oktober. Ältere Info, bitte live prüfen.", src:"bnp"}
+   ]},
+  {id:"kanada", name:"Kanada", place:"Toronto", lat:43.65, lon:-79.38, sev:"ruhig",
+   markets:["aktien","oel"], iso:["CAN"],
+   why:"Heute Feiertag, keine akute Störung.",
+   items:[
+    {date:"12. Okt", title:"Börse wegen Thanksgiving geschlossen", text:"Kanadische Aktien werden heute nicht gehandelt.", src:"ifc"},
+    {date:"5. Okt", title:"Cenovus kauft Athabasca Oil", text:"Der Deal bewertet den Ölproduzenten mit rund 4 Mrd. US-Dollar.", src:"investrade5"}
+   ]}
+];
+
+const GLOBAL = [
+  {id:"krypto", name:"Krypto", place:"Weltweit", sev:"beobachten", markets:["krypto"],
+   why:"Hohe US-Zinsen und Liquidationen machen Bitcoin gerade schwankungsanfällig.",
+   items:[
+    {date:"9. Okt", title:"Bitcoin um 81.677 $", text:"Damit liegt Bitcoin rund 35 % unter seinem Rekordhoch von 126.080 $.", src:"crypto"},
+    {date:"7. Okt", title:"Kurzer Absturz mit Liquidationen", text:"Bitcoin fiel unter 84.000 $, über 400 Mio. $ an gehebelten Positionen wurden liquidiert.", src:"crypto"}
+   ]},
+  {id:"gold", name:"Gold", place:"Weltweit", sev:"beobachten", markets:["rohstoffe"],
+   why:"Gold reagiert 2026 kaum als sicherer Hafen und leidet unter steigenden Zinsen.",
+   items:[
+    {date:"5. Okt", title:"Gold deutlich unter Rekord", text:"Gold-Futures schlossen bei 4.157 $ je Unze, 21,8 % unter dem Rekord von 5.318 $ vom 29. Januar. Im letzten Monat −7,1 %.", src:"gold"}
+   ]}
+];
+
+const TICKER = [
+  {l:"Brent", v:"103,06 $", m:"9. Okt · −1,12 $", cls:"down"},
+  {l:"S&P 500", v:"7.811,54", m:"9. Okt · +0,6 %", cls:"up"},
+  {l:"Nasdaq", v:"27.366,17", m:"9. Okt · +0,6 %", cls:"up"},
+  {l:"Dow Jones", v:"51.654,95", m:"9. Okt · +0,8 %", cls:"up"},
+  {l:"US-Rendite 10J", v:"5,24 %", m:"9. Okt · höchste seit 2002", cls:"down"},
+  {l:"Gold", v:"4.157 $", m:"5. Okt · −7,1 % 1M", cls:"down"},
+  {l:"Bitcoin", v:"81.677 $", m:"9. Okt · −35 % v. Hoch", cls:"down"},
+  {l:"EZB Einlagesatz", v:"2,50 %", m:"seit 16. Sept", cls:""}
+];
+
+const CAL = [
+  {d:"12. Okt", t:"Feiertag in Japan und Kanada, Inflation Indien", n:"Börsen Tokio & Toronto zu", src:"ifc"},
+  {d:"15. Okt", t:"US-Steuerfrist für Krypto-Anleger mit Verlängerung", n:"betrifft US-Steuerzahler", src:"coingabbar"},
+  {d:"≈ 18. Okt", t:"Frist für Strafzölle wegen Russland-Öl", n:"laut indischer Marktvorschau", src:"ziro"},
+  {d:"27.–28. Okt", t:"US-Notenbank Fed tagt", n:"Zinsentscheid", src:"magpie"},
+  {d:"29. Okt", t:"EZB-Zinsentscheid", n:"14:15 Uhr", src:"delta"},
+  {d:"3. Nov", t:"US-Zwischenwahlen", n:"Risiko neuer Iran-Angriffe davor", src:"sabah"}
+];
+
+/* ---------- Hilfen ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const ALL = HOTSPOTS.concat(GLOBAL);
+const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let filter = "alle";
+let selectedId = "hormus";
+let globe = null; // wird gesetzt, wenn d3 geladen ist
+
+function visible(h){ return filter === "alle" || h.markets.includes(filter); }
+function sorted(list){ return list.slice().sort((a,b)=>SEV_ORDER[a.sev]-SEV_ORDER[b.sev]); }
+
+/* ---------- Kennzahlen, Filter, Termine ---------- */
+
+const filtersEl = $("#filters");
+[["alle","Alle"]].concat(Object.entries(MARKETS)).forEach(([k,label])=>{
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chip"; b.id = "f-"+k; b.textContent = label;
+  b.setAttribute("aria-pressed", k===filter ? "true":"false");
+  b.addEventListener("click", ()=>{
+    filter = k;
+    filtersEl.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c===b ? "true":"false"));
+    const cur = ALL.find(h=>h.id===selectedId);
+    if(!cur || !visible(cur)){
+      const first = sorted(ALL).find(visible);
+      if(first) selectedId = first.id;
+    }
+    renderAll(true);
+  });
+  filtersEl.appendChild(b);
+});
+
+$("#cal").innerHTML = CAL.map(c =>
+  `<li><span class="c-d">${esc(c.d)}</span><span class="c-t">${esc(c.t)}</span><span class="c-n">${esc(c.n)} · <a href="${SRC[c.src].url}" target="_blank" rel="noopener">Quelle</a></span></li>`
+).join("");
+
+/* ---------- Liste & Detail ---------- */
+function rowHTML(h){
+  return `<li><button type="button" class="row" data-id="${h.id}" aria-current="${h.id===selectedId}">
+    <span class="stripe ${h.sev}"></span>
+    <span class="r-main"><span class="r-place">${esc(h.name)} · ${esc(h.place)}</span><span class="r-head">${esc(h.items[0].title)}</span></span>
+    <span class="r-sev">${SEV_LABEL[h.sev]}</span></button></li>`;
+}
+function renderList(){
+  const spots = sorted(HOTSPOTS.filter(visible));
+  const glob = sorted(GLOBAL.filter(visible));
+  let html = spots.map(rowHTML).join("");
+  if(glob.length) html += `<li><h3 style="margin:12px 10px 6px">Weltweit, ohne festen Ort</h3></li>` + glob.map(rowHTML).join("");
+  if(!spots.length && !glob.length) html = `<li class="empty">Für diesen Markt gibt es gerade keinen Brennpunkt.</li>`;
+  $("#list").innerHTML = html;
+  $("#list").querySelectorAll(".row").forEach(r => r.addEventListener("click", ()=>select(r.dataset.id, true)));
+}
+function renderDetail(){
+  const h = ALL.find(x=>x.id===selectedId);
+  const el = $("#detail");
+  if(!h){ el.innerHTML = `<p class="why">Wähle einen Brennpunkt aus.</p>`; return; }
+  const coords = (h.lat!=null) ? `${Math.abs(h.lat).toFixed(1).replace(".",",")}° ${h.lat>=0?"N":"S"} · ${Math.abs(h.lon).toFixed(1).replace(".",",")}° ${h.lon>=0?"O":"W"}` : "weltweit";
+  el.innerHTML = `
+    <div class="d-top"><span class="pill ${h.sev}"><span class="dot ${h.sev}"></span>${SEV_LABEL[h.sev]}</span><span class="coords">${coords}</span></div>
+    <h2>${esc(h.name)}</h2>
+    <p class="why">${esc(h.why)}</p>
+    <div class="tags">${h.markets.map(m=>`<span class="tag">${esc(MARKETS[m])}</span>`).join("")}</div>
+    <ul class="news">${h.items.map(it=>`
+      <li><span class="n-date">${esc(it.date)}</span><span class="n-title">${esc(it.title)}</span>
+      <span class="n-text">${esc(it.text)}</span>
+      <a class="n-src" href="${SRC[it.src].url}" target="_blank" rel="noopener">${esc(SRC[it.src].name)} ↗</a></li>`).join("")}
+    </ul>`;
+}
+function renderCount(){
+  const vis = HOTSPOTS.filter(visible);
+  const n = s => vis.filter(h=>h.sev===s).length;
+  $("#count").innerHTML = `<span><span class="dot kritisch"></span><b>${n("kritisch")}</b> kritisch</span><span><span class="dot beobachten"></span><b>${n("beobachten")}</b> beobachten</span><span><span class="dot ruhig"></span><b>${n("ruhig")}</b> ruhig</span>`;
+}
+function renderAll(rotate){
+  renderList(); renderDetail(); renderCount();
+  if(globe){ globe.refresh(); if(rotate) globe.focus(selectedId); }
+}
+function select(id, rotate){
+  selectedId = id;
+  renderAll(rotate);
+}
+
+/* ---------- Weltkugel ---------- */
+function initGlobe(){
+  if(!window.d3) { $("#nomap").hidden = false; return null; }
+  const canvas = $("#globe"), box = $("#globeBox");
+  const ctx = canvas.getContext("2d");
+  const col = {
+    crit:css("--crit"), watch:css("--watch"), calm:css("--calm"), accent:css("--accent"),
+    oceanA:css("--ocean-a"), oceanB:css("--ocean-b"), land:css("--land"), border:css("--border"), grid:css("--grid"), fg:css("--fg")
+  };
+  const sevCol = {kritisch:col.crit, beobachten:col.watch, ruhig:col.calm};
+  const projection = d3.geoOrthographic().clipAngle(90).precision(0.6);
+  const path = d3.geoPath(projection, ctx);
+  const graticule = d3.geoGraticule10();
+  let countries = null, borders = null, size = 0, dpr = 1;
+  let rot = [-45, -22, 0];
+  let anim = null, dragging = false, lastInteract = 0, downPos = null;
+
+  function loadWorld(){
+    try{
+      const topo = window.Datamap && window.Datamap.prototype && window.Datamap.prototype.worldTopo;
+      if(!topo || !window.topojson) return false;
+      const obj = topo.objects.world || topo.objects[Object.keys(topo.objects)[0]];
+      countries = topojson.feature(topo, obj).features;
+      borders = topojson.mesh(topo, obj, (a,b)=>a!==b);
+      $("#nomap").hidden = true;
+      return true;
+    }catch(e){ return false; }
+  }
+  if(!loadWorld()){
+    // Ersatzquelle versuchen
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/datamaps@0.5.9/dist/datamaps.world.min.js";
+    s.onload = ()=>{ if(!loadWorld()) $("#nomap").hidden = false; };
+    s.onerror = ()=>{ $("#nomap").hidden = false; };
+    document.head.appendChild(s);
+  }
+
+  function isoSev(){
+    const m = {};
+    HOTSPOTS.filter(visible).forEach(h=>h.iso.forEach(i=>{
+      if(!m[i] || SEV_ORDER[h.sev] < SEV_ORDER[m[i]]) m[i] = h.sev;
+    }));
+    return m;
+  }
+  function withAlpha(hex, a){
+    const h = hex.replace("#","");
+    const n = parseInt(h.length===3 ? h.split("").map(c=>c+c).join("") : h, 16);
+    return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+  }
+
+  function resize(){
+    const r = box.getBoundingClientRect();
+    size = Math.max(200, Math.floor(Math.min(r.width, r.height || r.width)));
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = size*dpr; canvas.height = size*dpr;
+    canvas.style.width = size+"px"; canvas.style.height = size+"px";
+    projection.translate([size/2, size/2]).scale(size/2 - 18);
+  }
+
+  function draw(t){
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,size,size);
+    projection.rotate(rot);
+    const R = projection.scale(), c = size/2;
+
+    // Atmosphärenschein
+    const glow = ctx.createRadialGradient(c,c,R*0.92,c,c,R*1.12);
+    glow.addColorStop(0, withAlpha(col.accent,0.18)); glow.addColorStop(1, withAlpha(col.accent,0));
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(c,c,R*1.12,0,Math.PI*2); ctx.fill();
+
+    // Ozean
+    const oc = ctx.createRadialGradient(c-R*0.35,c-R*0.4,R*0.1,c,c,R);
+    oc.addColorStop(0, col.oceanA); oc.addColorStop(1, col.oceanB);
+    ctx.beginPath(); path({type:"Sphere"}); ctx.fillStyle = oc; ctx.fill();
+
+    // Gradnetz
+    ctx.beginPath(); path(graticule); ctx.strokeStyle = col.grid; ctx.lineWidth = 1; ctx.stroke();
+
+    // Länder
+    if(countries){
+      const hl = isoSev();
+      ctx.fillStyle = col.land;
+      ctx.beginPath(); countries.forEach(f=>{ if(!hl[f.id]) path(f); }); ctx.fill();
+      ["ruhig","beobachten","kritisch"].forEach(s=>{
+        ctx.beginPath(); let any=false;
+        countries.forEach(f=>{ if(hl[f.id]===s){ path(f); any=true; } });
+        if(any){ ctx.fillStyle = withAlpha(sevCol[s], s==="kritisch"?0.32:0.24); ctx.fill(); }
+      });
+      ctx.beginPath(); path(borders); ctx.strokeStyle = col.border; ctx.lineWidth = 0.6; ctx.stroke();
+    }
+
+    // Rand
+    ctx.beginPath(); path({type:"Sphere"}); ctx.strokeStyle = withAlpha(col.accent,0.35); ctx.lineWidth = 1; ctx.stroke();
+
+    // Brennpunkte
+    const center = [-rot[0], -rot[1]];
+    const phase = reduced ? 0.35 : ((t||0)/1600)%1;
+    sorted(HOTSPOTS.filter(visible)).reverse().forEach(h=>{
+      const d = d3.geoDistance([h.lon,h.lat], center);
+      if(d > Math.PI/2 - 0.04) return;
+      const [x,y] = projection([h.lon,h.lat]);
+      const colr = sevCol[h.sev];
+      const fade = Math.min(1, (Math.PI/2 - d)/0.35);
+      ctx.globalAlpha = fade;
+      if(h.sev==="kritisch"){
+        ctx.beginPath(); ctx.arc(x,y,6+phase*16,0,Math.PI*2);
+        ctx.strokeStyle = withAlpha(colr, 0.9*(1-phase)); ctx.lineWidth = 2; ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(x,y,h.id===selectedId?6.5:4.5,0,Math.PI*2);
+      ctx.fillStyle = colr; ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(12,18,32,.9)"; ctx.stroke();
+      if(h.id===selectedId){
+        ctx.beginPath(); ctx.arc(x,y,12,0,Math.PI*2);
+        ctx.strokeStyle = col.fg; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.font = '600 15px "Barlow Condensed", "Arial Narrow", sans-serif';
+        const label = h.name.toUpperCase();
+        const w = ctx.measureText(label).width;
+        let lx = (x + 18 + w > size - 8) ? x - 18 - w : x + 18;
+        lx = Math.max(8, Math.min(size - w - 8, lx));
+        ctx.fillStyle = "rgba(12,18,32,.78)";
+        ctx.fillRect(lx-6, y-11, w+12, 22);
+        ctx.fillStyle = col.fg; ctx.textBaseline = "middle";
+        ctx.fillText(label, lx, y+1);
+      }
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  let last = 0;
+  function frame(t){
+    const dt = Math.min(64, t - last); last = t;
+    if(anim){
+      const k = Math.min(1, (t - anim.start)/anim.dur);
+      rot = anim.interp(d3.easeCubicInOut(k));
+      if(k>=1) anim = null;
+    } else if(!dragging && !reduced && t - lastInteract > 5000){
+      rot[0] += dt*0.006;
+    }
+    draw(t);
+    requestAnimationFrame(frame);
+  }
+
+  function focus(id){
+    const h = HOTSPOTS.find(x=>x.id===id);
+    if(!h) return;
+    const target = [-h.lon, Math.max(-50, Math.min(50, -h.lat)), 0];
+    // kürzesten Weg drehen
+    let from = rot.slice();
+    while(target[0]-from[0] > 180) from[0] += 360;
+    while(target[0]-from[0] < -180) from[0] -= 360;
+    lastInteract = performance.now();
+    if(reduced){ rot = target; return; }
+    anim = {start:performance.now(), dur:1000, interp:d3.interpolate(from, target)};
+  }
+
+  function hit(px,py){
+    const center = [-rot[0], -rot[1]];
+    let best = null, bd = 16;
+    HOTSPOTS.filter(visible).forEach(h=>{
+      if(d3.geoDistance([h.lon,h.lat], center) > Math.PI/2 - 0.04) return;
+      const [x,y] = projection([h.lon,h.lat]);
+      const d = Math.hypot(x-px, y-py);
+      if(d < bd){ bd = d; best = h; }
+    });
+    return best;
+  }
+
+  d3.select(canvas).call(d3.drag()
+    .on("start", e=>{ dragging = true; anim = null; downPos = [e.x,e.y]; canvas.classList.add("dragging"); })
+    .on("drag", e=>{
+      const k = 75 / projection.scale();
+      rot[0] += e.dx * k * 1.0;
+      rot[1] = Math.max(-60, Math.min(60, rot[1] - e.dy * k));
+      lastInteract = performance.now();
+    })
+    .on("end", e=>{
+      dragging = false; canvas.classList.remove("dragging"); lastInteract = performance.now();
+      if(downPos && Math.hypot(e.x-downPos[0], e.y-downPos[1]) < 5){
+        const h = hit(e.x, e.y);
+        if(h) select(h.id, true);
+      }
+    }));
+
+  canvas.addEventListener("keydown", e=>{
+    const step = 8;
+    if(e.key==="ArrowLeft"){ rot[0]-=step; } else if(e.key==="ArrowRight"){ rot[0]+=step; }
+    else if(e.key==="ArrowUp"){ rot[1]=Math.max(-60,rot[1]-step); } else if(e.key==="ArrowDown"){ rot[1]=Math.min(60,rot[1]+step); }
+    else return;
+    e.preventDefault(); anim=null; lastInteract = performance.now();
+  });
+
+  resize();
+  if(window.ResizeObserver) new ResizeObserver(()=>{ resize(); draw(last); }).observe(box);
+  else window.addEventListener("resize", resize);
+  requestAnimationFrame(frame);
+
+  return {refresh(){ draw(last); }, focus};
+}
+
+renderAll(false);
+try{ globe = initGlobe(); if(globe) globe.focus(selectedId); }
+catch(err){ $("#nomap").hidden = false; }
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+const COINS = [
+  {sym:"BTCUSDT", name:"Bitcoin", pair:"BTC / USDT", dec:2, tv:"BINANCE:BTCUSDT"},
+  {sym:"ETHUSDT", name:"Ethereum", pair:"ETH / USDT", dec:2, tv:"BINANCE:ETHUSDT"},
+  {sym:"SOLUSDT", name:"Solana", pair:"SOL / USDT", dec:2, tv:"BINANCE:SOLUSDT"},
+  {sym:"XRPUSDT", name:"XRP", pair:"XRP / USDT", dec:4, tv:"BINANCE:XRPUSDT"}
+];
+const CHARTS = [
+  {label:"Bitcoin", tv:"BINANCE:BTCUSDT"},
+  {label:"Ethereum", tv:"BINANCE:ETHUSDT"},
+  {label:"Gold", tv:"OANDA:XAUUSD"},
+  {label:"Brent-Öl", tv:"TVC:UKOIL"},
+  {label:"S&P 500", tv:"FOREXCOM:SPXUSD"},
+  {label:"Nasdaq 100", tv:"FOREXCOM:NSXUSD"},
+  {label:"DAX", tv:"XETR:DAX"},
+  {label:"EUR/USD", tv:"FX:EURUSD"}
+];
+const $ = s => document.querySelector(s);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const state = {};
+let currentChart = "BINANCE:BTCUSDT";
+
+function fmt(v, dec){ return v.toLocaleString("de-DE",{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+
+/* Kacheln */
+const coinsEl = $("#coins");
+COINS.forEach(c=>{
+  state[c.sym] = {series:[], last:null, minute:null};
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "coin"; b.id = "coin-"+c.sym;
+  b.setAttribute("aria-pressed", c.tv===currentChart ? "true":"false");
+  b.setAttribute("aria-label", c.name+" im Chart zeigen");
+  b.innerHTML = `<div class="c-top"><span class="c-name">${c.name}</span><span class="c-pair">${c.pair}</span></div>
+    <div class="c-price" id="p-${c.sym}">–</div>
+    <div class="c-row"><span class="c-chg" id="g-${c.sym}">24h –</span><span id="hl-${c.sym}"></span></div>
+    <canvas class="spark" id="s-${c.sym}" aria-hidden="true"></canvas>
+    <div class="c-row"><span>letzte 60 Min.</span><span id="t-${c.sym}"></span></div>`;
+  b.addEventListener("click", ()=>showChart(c.tv));
+  coinsEl.appendChild(b);
+});
+
+function drawSpark(sym){
+  const cv = document.getElementById("s-"+sym); if(!cv) return;
+  const s = state[sym].series; if(s.length < 2) return;
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if(!w) return;
+  cv.width = w*dpr; cv.height = h*dpr;
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+  let mn = Math.min(...s), mx = Math.max(...s); if(mx===mn){ mx+=1; mn-=1; }
+  const pad = 4;
+  const x = i => pad + i*(w-2*pad)/(s.length-1);
+  const y = v => pad + (1-(v-mn)/(mx-mn))*(h-2*pad);
+  const col = s[s.length-1] >= s[0] ? css("--calm") : css("--crit");
+  // Raster
+  ctx.strokeStyle = css("--line"); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, h/2+.5); ctx.lineTo(w, h/2+.5); ctx.stroke();
+  // Fläche
+  const g = ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0, col+"55"); g.addColorStop(1, col+"00");
+  ctx.beginPath(); ctx.moveTo(x(0), y(s[0]));
+  s.forEach((v,i)=>ctx.lineTo(x(i), y(v)));
+  ctx.lineTo(x(s.length-1), h); ctx.lineTo(x(0), h); ctx.closePath();
+  ctx.fillStyle = g; ctx.fill();
+  // Linie
+  ctx.beginPath(); s.forEach((v,i)=> i?ctx.lineTo(x(i),y(v)):ctx.moveTo(x(i),y(v)));
+  ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.stroke();
+  // Endpunkt
+  ctx.beginPath(); ctx.arc(x(s.length-1), y(s[s.length-1]), 3, 0, Math.PI*2); ctx.fillStyle = col; ctx.fill();
+}
+
+/* Verlauf der letzten 60 Minuten vorladen */
+COINS.forEach(c=>{
+  fetch(`https://api.binance.com/api/v3/klines?symbol=${c.sym}&interval=1m&limit=60`)
+    .then(r=>r.ok?r.json():Promise.reject())
+    .then(rows=>{
+      const st = state[c.sym];
+      if(st.series.length > 2) return;
+      st.series = rows.map(r=>parseFloat(r[4]));
+      st.minute = Math.floor(rows[rows.length-1][0]/60000);
+      drawSpark(c.sym);
+    }).catch(()=>{});
+});
+
+/* Live-Stream */
+let ws = null, retry = 0;
+function setConn(mode, text){ const el = $("#conn"); el.className = "conn "+mode; $("#connText").textContent = text; }
+function connect(){
+  const streams = COINS.map(c=>c.sym.toLowerCase()+"@ticker").join("/");
+  try{ ws = new WebSocket("wss://stream.binance.com:9443/stream?streams="+streams); }
+  catch(e){ setConn("off","Binance nicht erreichbar"); return; }
+  ws.onopen = ()=>{ retry = 0; setConn("on","Live · Binance"); };
+  ws.onmessage = ev=>{
+    let msg; try{ msg = JSON.parse(ev.data); }catch(e){ return; }
+    const d = msg.data; if(!d || !d.s) return;
+    const c = COINS.find(x=>x.sym===d.s); if(!c) return;
+    const st = state[c.sym];
+    const price = parseFloat(d.c), chg = parseFloat(d.P);
+    const pEl = document.getElementById("p-"+c.sym);
+    if(st.last!==null && price!==st.last){
+      pEl.classList.remove("flash-up","flash-down"); void pEl.offsetWidth;
+      pEl.classList.add(price>st.last?"flash-up":"flash-down");
+      clearTimeout(st.t); st.t = setTimeout(()=>pEl.classList.remove("flash-up","flash-down"), 700);
+    }
+    st.last = price;
+    pEl.textContent = fmt(price, c.dec) + " $";
+    const gEl = document.getElementById("g-"+c.sym);
+    gEl.textContent = "24h " + (chg>=0?"+":"") + fmt(chg,2) + " %";
+    gEl.className = "c-chg " + (chg>=0?"up":"down");
+    document.getElementById("hl-"+c.sym).textContent = "H " + fmt(parseFloat(d.h), c.dec>2?4:0) + " · T " + fmt(parseFloat(d.l), c.dec>2?4:0);
+    const now = new Date();
+    document.getElementById("t-"+c.sym).textContent = now.toLocaleTimeString("de-DE");
+    const m = Math.floor(Date.now()/60000);
+    if(st.minute===null || m>st.minute){ st.series.push(price); st.minute = m; if(st.series.length>60) st.series.shift(); }
+    else if(st.series.length){ st.series[st.series.length-1] = price; }
+    drawSpark(c.sym);
+  };
+  ws.onclose = ()=>{
+    setConn("off","Verbindung weg, verbinde neu …");
+    retry = Math.min(retry+1, 6);
+    setTimeout(connect, 1000*Math.pow(2, retry-1));
+  };
+  ws.onerror = ()=>{ try{ ws.close(); }catch(e){} };
+}
+connect();
+window.addEventListener("resize", ()=>COINS.forEach(c=>drawSpark(c.sym)));
+
+/* TradingView-Chart */
+const tabsEl = $("#chartTabs");
+CHARTS.forEach(ch=>{
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chip"; b.textContent = ch.label; b.dataset.tv = ch.tv;
+  b.addEventListener("click", ()=>showChart(ch.tv));
+  tabsEl.appendChild(b);
+});
+function showChart(sym){
+  currentChart = sym;
+  tabsEl.querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed", b.dataset.tv===sym?"true":"false"));
+  coinsEl.querySelectorAll(".coin").forEach(b=>{
+    const c = COINS.find(x=>"coin-"+x.sym===b.id);
+    b.setAttribute("aria-pressed", c && c.tv===sym ? "true":"false");
+  });
+  const box = $("#tvChart");
+  box.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.className = "tradingview-widget-container"; wrap.style.height = "100%"; wrap.style.width = "100%";
+  const inner = document.createElement("div");
+  inner.className = "tradingview-widget-container__widget"; inner.style.height = "100%"; inner.style.width = "100%";
+  wrap.appendChild(inner);
+  const sc = document.createElement("script");
+  sc.type = "text/javascript"; sc.async = true;
+  sc.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+  sc.text = JSON.stringify({
+    autosize:true, symbol:sym, interval:"1", timezone:"Europe/Berlin", theme:"dark", style:"1",
+    locale:"de_DE", allow_symbol_change:true, backgroundColor:"rgba(19,27,44,1)", gridColor:"rgba(37,48,74,0.6)",
+    hide_volume:false, calendar:false, support_host:"https://www.tradingview.com"
+  });
+  wrap.appendChild(sc);
+  box.appendChild(wrap);
+  if(window.innerWidth < 920 && document.activeElement && document.activeElement.classList.contains("coin")){
+    box.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+}
+showChart(currentChart);
+})();
+</script>
+</body>
+</html>
