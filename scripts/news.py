@@ -72,7 +72,7 @@ SEV_CRIT = re.compile("|".join([
     r"attack", r"angriff", r"angegriffen", r"\bwar\b", r"krieg", r"airstrike", r"luftangriff", r"missile", r"rakete", r"drohne", r"\bdrone",
     r"explosion", r"explod", r"crash", r"absturz", r"einbruch", r"bricht ein", r"plunge", r"plummet", r"collapse", r"kollaps",
     r"tanker", r"blockade", r"blockiert", r"invasion", r"emergency", r"notstand", r"liquidat", r"\bhack", r"bankrupt", r"insolvenz",
-    r"pleite", r"tumble", r"sell-?off", r"ausverkauf", r"panic", r"panik", r"crisis", r"krise", r"default", r"seized", r"beschlagnahm",
+    r"pleite", r"tumble", r"sell-?off", r"ausverkauf", r"panic", r"panik", r"crisis", r"krise", r"default",
     r"highest since", r"höchste[rns]? (?:stand )?seit", r"lowest since", r"tiefste[rns]? (?:stand )?seit",
 ]), re.I)
 SEV_WATCH = re.compile("|".join([
@@ -80,7 +80,7 @@ SEV_WATCH = re.compile("|".join([
     r"leitzins", r"\bzinsen", r"yield", r"rendite", r"\bfed\b", r"\becb\b", r"\bezb\b", r"\bopec", r"warn", r"risk", r"risiko",
     r"\bfalls?\b", r"fällt", r"fallen", r"drops?\b", r"slides?\b", r"sinkt", r"verliert", r"volatil", r"tension", r"spannung",
     r"election", r"\bwahl", r"deadline", r"\bfrist", r"downgrade", r"herabgestuft", r"recession", r"rezession", r"jobs report", r"arbeitsmarkt",
-    r"record high", r"rekordhoch", r"rekordtief", r"surge", r"soar", r"steigt", r"springt", r"jump", r"rall(?:y|ies)",
+    r"seized", r"beschlagnahm", r"record high", r"rekordhoch", r"rekordtief", r"surge", r"soar", r"steigt", r"springt", r"jump", r"rall(?:y|ies)",
 ]), re.I)
 
 MARKETS = [
@@ -93,6 +93,7 @@ MARKETS = [
 ]
 MKT_RX = [(k, re.compile(p, re.I)) for k, p in MARKETS]
 
+NOISE = re.compile(r"WpHG|EQS-|DGAP|Stimmrechtsmitteilung|Directors.? Dealings|Veröffentlichung gemäß|Korrektur einer Veröffentlichung|Erwerb eigener Aktien|Aktienrückkauf.{0,20}Meldung|Sponsored|Anzeige|Horoskop", re.I)
 TAG_RX = re.compile(r"<[^>]+>")
 
 def clean(s, limit=None):
@@ -158,9 +159,12 @@ def fetch(url):
 def classify(item):
     text = item["t"] + " " + item["x"]
     loc = None
-    for k, n, la, lo, iso, rx in LOC_RX:
-        if rx.search(item["t"]) or rx.search(text):
-            loc = k
+    for field in (item["t"], item["x"]):  # erst Titel, dann Beschreibung
+        for k, n, la, lo, iso, rx in LOC_RX:
+            if field and rx.search(field):
+                loc = k
+                break
+        if loc:
             break
     if SEV_CRIT.search(item["t"]):
         sev = "kritisch"
@@ -193,8 +197,10 @@ def main():
         if not key or key in seen:
             continue
         seen.add(key)
+        if NOISE.search(it["t"]):
+            continue  # Pflichtmitteilungen, Werbung
         loc, sev, mk = classify(it)
-        if not mk and not loc:
+        if not mk and sev == "ruhig":
             continue  # nicht marktrelevant
         items.append({
             "t": it["t"], "u": it["u"], "s": it["s"], "x": it["x"],
