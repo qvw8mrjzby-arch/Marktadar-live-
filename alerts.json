@@ -3,7 +3,7 @@
   "kurse": [
     {"symbol": "BTC", "below": 75000},
     {"symbol": "BTC", "above": 90000},
-    {"symbol": "ETH", "below": 2700},
+    {"symbol": "ETH", "below": 2300},
     {"symbol": "BRENT", "above": 110},
     {"symbol": "BRENT", "below": 95},
     {"symbol": "GOLD", "below": 4000},

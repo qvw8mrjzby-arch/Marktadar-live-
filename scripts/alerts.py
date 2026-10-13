@@ -32,8 +32,10 @@ SYMBOLS = {
 }
 
 
-def get_json(url, timeout=20):
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
+def get_json(url, timeout=20, extra=None):
+    h = {"User-Agent": UA, "Accept": "application/json, text/plain, */*", "Accept-Language": "en-US,en;q=0.9"}
+    h.update(extra or {})
+    req = urllib.request.Request(url, headers=h)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
 
@@ -105,7 +107,8 @@ def fetch_fng():
     except Exception as e:
         out["crypto_error"] = type(e).__name__
     try:
-        d = get_json("https://production.dataviz.cnn.io/index/fearandgreed/graphdata")
+        d = get_json("https://production.dataviz.cnn.io/index/fearandgreed/graphdata",
+                     extra={"Referer": "https://edition.cnn.com/", "Origin": "https://edition.cnn.com"})
         fg = d["fear_and_greed"]
         v = round(float(fg["score"]))
         hist = [round(float(p["y"])) for p in d.get("fear_and_greed_historical", {}).get("data", [])][-30:]
