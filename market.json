@@ -1,37 +1,37 @@
 {
- "updated": "2026-10-13T19:58:19Z",
+ "updated": "2026-10-13T22:45:29Z",
  "prices": {
   "BTC": {
-   "price": 83182,
-   "chg": 0.49296192873989125
+   "price": 83454,
+   "chg": 1.1428291146889928
   },
   "ETH": {
-   "price": 2504.95,
-   "chg": -0.59239377289416
+   "price": 2510.9,
+   "chg": 1.0336640399733337
   },
   "SOL": {
-   "price": 107.45,
-   "chg": -0.700855513875139
+   "price": 106.83,
+   "chg": 0.0744984244289323
   },
   "XRP": {
    "price": 1.37,
-   "chg": 0.3526812490323969
+   "chg": 1.2770263713029009
   },
   "GOLD": {
-   "price": 4187.3,
-   "chg": 0.7288910271830762
+   "price": 4183.4,
+   "chg": 0.6350733702189082
   },
   "BRENT": {
-   "price": 106.1,
-   "chg": 1.7453011123897078
+   "price": 106.2,
+   "chg": 1.8411967779056404
   },
   "SP500": {
-   "price": 7804.25,
-   "chg": -0.1877494746723718
+   "price": 7805.45,
+   "chg": -0.17240210617054386
   },
   "NASDAQ": {
-   "price": 27200.24,
-   "chg": -1.4476559423097002
+   "price": 27204.38,
+   "chg": -1.4326558281783974
   },
   "DAX": {
    "price": 25259.9,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 83182,
+   "price": 83454,
    "unit": "$",
    "triggered": false
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 83182,
+   "price": 83454,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2504.95,
+   "price": 2510.9,
    "unit": "$",
    "triggered": false
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 106.1,
+   "price": 106.2,
    "unit": "$",
    "triggered": false
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 106.1,
+   "price": 106.2,
    "unit": "$",
    "triggered": false
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 4187.3,
+   "price": 4183.4,
    "unit": "$",
    "triggered": false
   },
