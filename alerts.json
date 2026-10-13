@@ -1,0 +1,16 @@
+{
+  "_hilfe": "Kursalarme: symbol = BTC, ETH, SOL, XRP, GOLD, BRENT, SP500, NASDAQ, DAX, EURUSD, US10Y. Mit below (fällt unter) oder above (steigt über). Ein Alarm meldet sich einmal und ist wieder scharf, wenn der Kurs 1 % zurückläuft.",
+  "kurse": [
+    {"symbol": "BTC", "below": 75000},
+    {"symbol": "BTC", "above": 90000},
+    {"symbol": "ETH", "below": 2700},
+    {"symbol": "BRENT", "above": 110},
+    {"symbol": "BRENT", "below": 95},
+    {"symbol": "GOLD", "below": 4000},
+    {"symbol": "US10Y", "above": 5.4}
+  ],
+  "news": {
+    "rot": true,
+    "max_pro_lauf": 3
+  }
+}

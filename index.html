@@ -169,6 +169,26 @@ canvas.dragging{cursor:grabbing}
 .f-meta{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
 .f-title{font-size:14px;font-weight:500;line-height:1.35}
 .feed-list .empty{grid-column:1/-1}
+
+/* ---------- Stimmung, Alarme, Kalender ---------- */
+.mood,.kal{display:flex;flex-direction:column;gap:12px}
+.mood-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.card h3{margin:0 0 8px;font:600 12px var(--font-body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.gauge-body{display:flex;flex-direction:column;align-items:center;gap:4px}
+.gauge{width:100%;max-width:240px;height:auto;display:block}
+.g-val{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1;letter-spacing:.02em}
+.g-lbl{font-size:14px;font-weight:600}
+.g-meta{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);text-align:center}
+.g-spark{width:100%;height:40px;display:block;margin-top:6px}
+.alarms{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.alarms li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
+.a-name{font-size:14px;font-weight:500}
+.a-cur{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);grid-column:1}
+.a-chip{grid-row:1/span 2;grid-column:2;font:600 11px var(--font-body);letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.a-chip.hit{color:var(--crit);border-color:color-mix(in srgb,var(--crit) 55%,transparent);background:color-mix(in srgb,var(--crit) 12%,transparent)}
+.a-chip.armed{color:var(--calm);border-color:color-mix(in srgb,var(--calm) 45%,transparent)}
+.kal-box{height:min(560px,75vh);min-height:420px;padding:6px}
 .tv-note{font-size:12px;color:var(--muted);margin:0 4px}
 </style>
 </head>
@@ -225,6 +245,40 @@ canvas.dragging{cursor:grabbing}
       <p class="tv-note">Chart von TradingView, 1-Minuten-Kerzen. Krypto in Echtzeit, Aktien und Indizes teils verzögert. Symbol oben im Chart änderbar.</p>
     </div>
   </section>
+
+  <section class="mood" aria-label="Stimmung und Alarme">
+    <div class="live-head"><h2>Stimmung &amp; Alarme</h2><span class="conn"><span class="led" id="pushLed"></span><span id="moodStamp">lädt …</span></span></div>
+    <div class="mood-grid">
+      <div class="card gauge-card" id="g-crypto"><h3>Fear &amp; Greed · Krypto</h3><div class="gauge-body">–</div></div>
+      <div class="card gauge-card" id="g-stocks"><h3>Fear &amp; Greed · Aktien (USA)</h3><div class="gauge-body">–</div></div>
+      <div class="card alarm-card">
+        <h3>Kursalarme</h3>
+        <ul class="alarms" id="alarmList"><li class="empty">lädt …</li></ul>
+        <p class="tv-note" id="pushNote">Alarme werden alle 30 Minuten geprüft und als Push aufs Handy geschickt.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="kal" aria-label="Wirtschaftskalender">
+    <div class="live-head"><h2>Wirtschaftskalender</h2><span class="conn">wichtige Termine · deutsche Zeit</span></div>
+    <div class="card kal-box">
+      <div class="tradingview-widget-container" style="height:100%;width:100%">
+        <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+        {
+          "colorTheme": "dark",
+          "isTransparent": true,
+          "width": "100%",
+          "height": "100%",
+          "locale": "de_DE",
+          "importanceFilter": "0,1",
+          "countryFilter": "us,eu,de,gb,cn,jp"
+        }
+        </script>
+      </div>
+    </div>
+  </section>
+
 
   <div class="live-head"><h2>Weltlage</h2><span class="conn"><span>News Stand 12.10.2026</span> · <span id="feedStamp">Schlagzeilen laden …</span></span></div>
   <nav class="filters" id="filters" aria-label="Nach Markt filtern"><span class="lbl">Markt</span></nav>
@@ -978,6 +1032,97 @@ function showChart(sym){
   }
 }
 showChart(currentChart);
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+const $ = s => document.querySelector(s);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const URLS = ["https://raw.githubusercontent.com/qvw8mrjzby-arch/Marktadar-live-/main/market.json", "market.json"];
+function num(v, unit){
+  if(v==null) return "–";
+  const d = unit==="%" ? 2 : (Math.abs(v) < 10 ? 4 : (Math.abs(v) < 1000 ? 2 : 0));
+  const s = v.toLocaleString("de-DE",{minimumFractionDigits:d,maximumFractionDigits:d});
+  return unit==="%" ? s+" %" : (unit ? s+" "+unit : s);
+}
+function ago(iso){
+  const m = Math.round((Date.now()-new Date(iso).getTime())/60000);
+  if(isNaN(m)) return ""; if(m<1) return "gerade eben"; if(m<60) return `vor ${m} Min.`;
+  return `vor ${Math.round(m/60)} Std.`;
+}
+function zoneColor(v){
+  if(v<25) return css("--crit"); if(v<45) return css("--watch"); if(v<=55) return css("--muted"); return css("--calm");
+}
+function gaugeSVG(v){
+  const cx=120, cy=118, r=96, w=16;
+  const seg = [[0,25,css("--crit")],[25,45,css("--watch")],[45,55,css("--muted")],[55,75,css("--calm")],[75,100,css("--calm")]];
+  const pt = (val, rad) => { const a = Math.PI*(1-val/100); return [cx+rad*Math.cos(a), cy-rad*Math.sin(a)]; };
+  const arcs = seg.map(([a,b,c],i)=>{
+    const [x1,y1]=pt(a+0.6,r), [x2,y2]=pt(b-0.6,r);
+    return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${c}" stroke-width="${w}" fill="none" opacity="${i===4?1:0.85}" stroke-linecap="butt"/>`;
+  }).join("");
+  const [nx,ny] = pt(v, r-26);
+  const ticks = [0,25,50,75,100].map(t=>{ const [x,y]=pt(t,r+16); return `<text x="${x.toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="middle" font-size="10" fill="${css("--muted")}" font-family="IBM Plex Mono, monospace">${t}</text>`; }).join("");
+  return `<svg class="gauge" viewBox="0 0 240 132" role="img" aria-label="Wert ${v} von 100">
+    ${arcs}${ticks}
+    <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${css("--fg")}" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="6" fill="${css("--fg")}"/></svg>`;
+}
+function sparkSVG(h){
+  if(!h || h.length<2) return "";
+  const W=240,H=40,p=3, mn=0, mx=100;
+  const x=i=>p+i*(W-2*p)/(h.length-1), y=v=>p+(1-(v-mn)/(mx-mn))*(H-2*p);
+  const d=h.map((v,i)=>(i?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1)).join(" ");
+  const col = zoneColor(h[h.length-1]);
+  return `<svg class="g-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <line x1="0" x2="${W}" y1="${y(50)}" y2="${y(50)}" stroke="${css("--line")}" stroke-dasharray="3 4"/>
+    <path d="${d}" fill="none" stroke="${col}" stroke-width="1.8" vector-effect="non-scaling-stroke"/>
+    <circle cx="${x(h.length-1)}" cy="${y(h[h.length-1])}" r="3" fill="${col}"/></svg>`;
+}
+function renderGauge(id, g, err){
+  const el = document.querySelector(`#${id} .gauge-body`); if(!el) return;
+  if(!g){ el.innerHTML = `<p class="g-meta">Gerade nicht verfügbar${err?` (${esc(err)})`:""}.</p>`; return; }
+  const prev = g.history && g.history.length>1 ? g.history[g.history.length-2] : null;
+  const diff = prev!=null ? g.value-prev : null;
+  el.innerHTML = gaugeSVG(g.value) +
+    `<span class="g-val" style="color:${zoneColor(g.value)}">${g.value}</span>
+     <span class="g-lbl">${esc(g.label)}</span>
+     ${sparkSVG(g.history)}
+     <span class="g-meta">letzte ${g.history?g.history.length:1} Tage${diff!=null?` · zum Vortag ${diff>0?"+":""}${diff}`:""} · Quelle ${esc(g.source)}</span>`;
+}
+function renderAlarms(m){
+  const ul = $("#alarmList");
+  if(!m.alerts || !m.alerts.length){ ul.innerHTML = `<li class="empty">Noch keine Kursalarme eingetragen.</li>`; return; }
+  ul.innerHTML = m.alerts.map(a=>`<li>
+    <span class="a-name">${esc(a.name)} ${a.dir==="below"?"unter":"über"} ${esc(num(a.level,a.unit))}</span>
+    <span class="a-chip ${a.triggered?"hit":"armed"}">${a.triggered?"ausgelöst":"scharf"}</span>
+    <span class="a-cur">jetzt ${esc(num(a.price,a.unit))}</span></li>`).join("");
+  const note = $("#pushNote"), led = $("#pushLed");
+  if(m.push_active){ note.textContent = "Push aufs Handy ist aktiv. Alarme und rote Meldungen werden zweimal pro Stunde geprüft. Nachts kommen sie leise."; led.parentElement.classList.add("on"); }
+  else { note.textContent = "Push aufs Handy ist noch nicht eingerichtet. Die Alarme werden trotzdem hier angezeigt."; led.parentElement.classList.add("off"); }
+}
+function apply(m){
+  $("#moodStamp").textContent = "aktualisiert " + ago(m.updated);
+  renderGauge("g-crypto", m.fng && m.fng.crypto, m.fng && m.fng.crypto_error);
+  renderGauge("g-stocks", m.fng && m.fng.stocks, m.fng && m.fng.stocks_error);
+  renderAlarms(m);
+}
+async function load(){
+  for(const u of URLS){
+    try{
+      const r = await fetch(u + (u.startsWith("http") ? "?t="+Math.floor(Date.now()/60000) : ""), {cache:"no-store"});
+      if(!r.ok) continue;
+      const j = await r.json();
+      if(j && j.updated){ apply(j); return; }
+    }catch(e){}
+  }
+  $("#moodStamp").textContent = "kommt mit dem nächsten Lauf";
+  $("#alarmList").innerHTML = `<li class="empty">Die Daten erscheinen nach dem nächsten automatischen Lauf.</li>`;
+}
+load(); setInterval(load, 10*60*1000);
 })();
 </script>
 </body>
