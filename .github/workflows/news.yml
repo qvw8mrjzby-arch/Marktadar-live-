@@ -4,7 +4,12 @@ on:
   schedule:
     - cron: "17 * * * *"   # jede Stunde zur Minute 17 (UTC)
     - cron: "47 * * * *"   # zusätzlich zur Minute 47, falls GitHub einen Lauf auslässt
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Testnachricht aufs Handy schicken"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -24,6 +29,7 @@ jobs:
       - name: Kurse, Stimmung und Alarme
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          TEST_PUSH: ${{ inputs.test }}
         run: python3 scripts/alerts.py
       - name: Speichern
         run: |

@@ -218,6 +218,10 @@ def main():
             push("Marktradar", f"{rest} weitere rote Meldungen in der letzten Stunde.", priority=3, tags=["globe_with_meridians"])
     state["seen_news"] = list(seen)[-600:]
 
+    # --- Testnachricht auf Wunsch (workflow_dispatch mit test=true) ---
+    if os.environ.get("TEST_PUSH", "").lower() == "true":
+        push("Testnachricht vom Marktradar", "Wenn du das liest, kommen deine Alarme auch auf diesem Gerät an.", priority=4, tags=["white_check_mark"])
+
     # --- Testnachricht nach dem Einrichten ---
     if TOPIC and not state.get("welcome_sent"):
         if push("Marktradar ist verbunden", "Ab jetzt bekommst du hier rote Meldungen und deine Kursalarme.", priority=3, tags=["white_check_mark"]):
