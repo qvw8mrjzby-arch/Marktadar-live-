@@ -1,0 +1,156 @@
+{
+ "updated": "2026-10-13T13:22:01Z",
+ "prices": {
+  "BTC": {
+   "price": 83254,
+   "chg": 0.8966426448223344
+  },
+  "ETH": {
+   "price": 2502.25,
+   "chg": -0.9133918041141227
+  },
+  "SOL": {
+   "price": 106.57,
+   "chg": -3.1719371131681164
+  },
+  "XRP": {
+   "price": 1.36,
+   "chg": -1.4993235331197774
+  },
+  "GOLD": {
+   "price": 4200.6,
+   "chg": 1.0488332932403255
+  },
+  "BRENT": {
+   "price": 105.54,
+   "chg": 1.2082853855005737
+  },
+  "SP500": {
+   "price": 7807.24,
+   "chg": 0.4282250336058224
+  },
+  "NASDAQ": {
+   "price": 27245.902,
+   "chg": -0.8421785101962453
+  },
+  "DAX": {
+   "price": 25293.36,
+   "chg": -0.6123181130715638
+  },
+  "EURUSD": {
+   "price": 1.1203,
+   "chg": -0.45317220543805714
+  },
+  "US10Y": {
+   "price": 5.2060003,
+   "chg": -1.3454557513738807
+  }
+ },
+ "price_errors": [],
+ "fng": {
+  "crypto": {
+   "value": 57,
+   "label": "Gier",
+   "history": [
+    57,
+    69,
+    51,
+    50,
+    56,
+    71,
+    71,
+    70,
+    78,
+    71,
+    71,
+    71,
+    74,
+    70,
+    74,
+    73,
+    71,
+    74,
+    72,
+    67,
+    65,
+    70,
+    73,
+    71,
+    64,
+    59,
+    64,
+    61,
+    69,
+    57
+   ],
+   "source": "alternative.me"
+  },
+  "stocks_error": "HTTPError"
+ },
+ "alerts": [
+  {
+   "symbol": "BTC",
+   "name": "Bitcoin",
+   "dir": "below",
+   "level": 75000,
+   "price": 83254,
+   "unit": "$",
+   "triggered": false
+  },
+  {
+   "symbol": "BTC",
+   "name": "Bitcoin",
+   "dir": "above",
+   "level": 90000,
+   "price": 83254,
+   "unit": "$",
+   "triggered": false
+  },
+  {
+   "symbol": "ETH",
+   "name": "Ethereum",
+   "dir": "below",
+   "level": 2700,
+   "price": 2502.25,
+   "unit": "$",
+   "triggered": true
+  },
+  {
+   "symbol": "BRENT",
+   "name": "Brent-Öl",
+   "dir": "above",
+   "level": 110,
+   "price": 105.54,
+   "unit": "$",
+   "triggered": false
+  },
+  {
+   "symbol": "BRENT",
+   "name": "Brent-Öl",
+   "dir": "below",
+   "level": 95,
+   "price": 105.54,
+   "unit": "$",
+   "triggered": false
+  },
+  {
+   "symbol": "GOLD",
+   "name": "Gold",
+   "dir": "below",
+   "level": 4000,
+   "price": 4200.6,
+   "unit": "$",
+   "triggered": false
+  },
+  {
+   "symbol": "US10Y",
+   "name": "US-Rendite 10J",
+   "dir": "above",
+   "level": 5.4,
+   "price": 5.2060003,
+   "unit": "%",
+   "triggered": false
+  }
+ ],
+ "push_active": false
+}
