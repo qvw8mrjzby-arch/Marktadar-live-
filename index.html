@@ -161,6 +161,14 @@ canvas.dragging{cursor:grabbing}
 .chart-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px}
 .tabs{display:flex;flex-wrap:wrap;gap:6px}
 .tv{height:min(560px,70vh);min-height:380px;border-radius:8px;overflow:hidden}
+.feed{display:flex;flex-direction:column;gap:10px}
+.feed-list{list-style:none;margin:0;padding:6px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:4px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.f-row{display:grid;grid-template-columns:4px minmax(0,1fr);gap:12px;align-items:stretch}
+.f-main{display:flex;flex-direction:column;gap:2px;padding:8px 6px 8px 0;color:var(--fg);text-decoration:none;min-width:0;border-radius:6px}
+.f-main:hover .f-title{text-decoration:underline}
+.f-meta{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.f-title{font-size:14px;font-weight:500;line-height:1.35}
+.feed-list .empty{grid-column:1/-1}
 .tv-note{font-size:12px;color:var(--muted);margin:0 4px}
 </style>
 </head>
@@ -218,7 +226,7 @@ canvas.dragging{cursor:grabbing}
     </div>
   </section>
 
-  <div class="live-head"><h2>Weltlage</h2><span class="conn">News Stand 12.10.2026</span></div>
+  <div class="live-head"><h2>Weltlage</h2><span class="conn"><span>News Stand 12.10.2026</span> · <span id="feedStamp">Schlagzeilen laden …</span></span></div>
   <nav class="filters" id="filters" aria-label="Nach Markt filtern"><span class="lbl">Markt</span></nav>
 
   <section class="main">
@@ -238,6 +246,12 @@ canvas.dragging{cursor:grabbing}
         <ul id="list"></ul>
       </div>
     </aside>
+  </section>
+
+  <section class="feed" aria-label="Schlagzeilen der letzten Stunden">
+    <div class="live-head"><h2>Schlagzeilen</h2><span class="conn"><span class="led"></span><span id="feedUpdated">stündlich</span></span></div>
+    <ul class="feed-list" id="feedList"></ul>
+    <p class="tv-note">Automatisch aus Finanz-Newsfeeds, jede Stunde neu. Englische Meldungen bleiben im Original. Die Farbe ist eine grobe Einstufung nach Stichworten.</p>
   </section>
 
   <section class="cal">
@@ -481,8 +495,8 @@ function renderDetail(){
     <div class="tags">${h.markets.map(m=>`<span class="tag">${esc(MARKETS[m])}</span>`).join("")}</div>
     <ul class="news">${h.items.map(it=>`
       <li><span class="n-date">${esc(it.date)}</span><span class="n-title">${esc(it.title)}</span>
-      <span class="n-text">${esc(it.text)}</span>
-      <a class="n-src" href="${SRC[it.src].url}" target="_blank" rel="noopener">${esc(SRC[it.src].name)} ↗</a></li>`).join("")}
+      ${it.text?`<span class="n-text">${esc(it.text)}</span>`:""}
+      ${srcLink(it)}</li>`).join("")}
     </ul>`;
 }
 function renderCount(){
@@ -490,8 +504,14 @@ function renderCount(){
   const n = s => vis.filter(h=>h.sev===s).length;
   $("#count").innerHTML = `<span><span class="dot kritisch"></span><b>${n("kritisch")}</b> kritisch</span><span><span class="dot beobachten"></span><b>${n("beobachten")}</b> beobachten</span><span><span class="dot ruhig"></span><b>${n("ruhig")}</b> ruhig</span>`;
 }
+function srcLink(it){
+  const s = it.src && SRC[it.src] ? SRC[it.src] : (it.url ? {name: it.srcName || "Quelle", url: it.url} : null);
+  if(!s) return "";
+  const safe = /^https?:\/\//.test(s.url) ? s.url : "#";
+  return `<a class="n-src" href="${esc(safe)}" target="_blank" rel="noopener">${esc(s.name)} ↗</a>`;
+}
 function renderAll(rotate){
-  renderList(); renderDetail(); renderCount();
+  renderList(); renderDetail(); renderCount(); renderFeed();
   if(globe){ globe.refresh(); if(rotate) globe.focus(selectedId); }
 }
 function select(id, rotate){
@@ -701,6 +721,94 @@ function initGlobe(){
 renderAll(false);
 try{ globe = initGlobe(); if(globe) globe.focus(selectedId); }
 catch(err){ $("#nomap").hidden = false; }
+
+/* ---------- Stündliche Schlagzeilen (news.json, per GitHub Actions) ---------- */
+const BASE_HOT = JSON.parse(JSON.stringify(HOTSPOTS));
+const BASE_GLOB = JSON.parse(JSON.stringify(GLOBAL));
+var FEED = null;
+const FEED_URLS = [
+  "https://raw.githubusercontent.com/qvw8mrjzby-arch/Marktadar-live-/main/news.json",
+  "news.json"
+];
+function ago(iso){
+  const d = new Date(iso); if(isNaN(d)) return "";
+  const m = Math.round((Date.now()-d.getTime())/60000);
+  if(m < 1) return "gerade eben";
+  if(m < 60) return `vor ${m} Min.`;
+  const h = Math.round(m/60);
+  if(h < 24) return `vor ${h} Std.`;
+  return d.toLocaleDateString("de-DE",{day:"numeric",month:"short"}) + " " + d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+}
+function kmBetween(a,b){
+  const R=6371, t=Math.PI/180, dLa=(b.lat-a.lat)*t, dLo=(b.lon-a.lon)*t;
+  const x=Math.sin(dLa/2)**2+Math.cos(a.lat*t)*Math.cos(b.lat*t)*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+function feedItem(it){ return {date:"Live · "+ago(it.p), title:it.t, text:it.x||"", url:it.u, srcName:it.s, live:true}; }
+function applyFeed(feed){
+  FEED = feed;
+  HOTSPOTS.splice(0, HOTSPOTS.length, ...JSON.parse(JSON.stringify(BASE_HOT)));
+  GLOBAL.splice(0, GLOBAL.length, ...JSON.parse(JSON.stringify(BASE_GLOB)));
+  const byLoc = {};
+  (feed.items||[]).forEach(it=>{ if(it.loc && feed.locs && feed.locs[it.loc]) (byLoc[it.loc] = byLoc[it.loc] || []).push(it); });
+  let added = 0;
+  Object.keys(byLoc).forEach(key=>{
+    const L = feed.locs[key], its = byLoc[key];
+    let h = HOTSPOTS.find(x => L.iso && x.iso && x.iso.includes(L.iso) && kmBetween(x,L) < 900)
+         || HOTSPOTS.find(x => kmBetween(x,L) < 350);
+    const sev = its.reduce((s,it)=> SEV_ORDER[it.sev] < SEV_ORDER[s] ? it.sev : s, "ruhig");
+    const mk = Array.from(new Set(its.flatMap(it=>it.m||[]))).filter(m=>MARKETS[m]);
+    if(h){
+      h.items = its.slice(0,3).map(feedItem).concat(h.items).slice(0,7);
+      mk.forEach(m=>{ if(!h.markets.includes(m)) h.markets.push(m); });
+    } else if(added < 12 && (sev !== "ruhig" || its.length >= 2)){
+      HOTSPOTS.push({id:"live-"+key, name:L.name, place:"Live-Schlagzeilen", lat:L.lat, lon:L.lon, sev,
+        markets: mk.length?mk:["aktien"], iso: L.iso?[L.iso]:[],
+        why:"Automatisch aus den Schlagzeilen der letzten Stunden erkannt. Die Einstufung folgt Stichworten und ist nur ein grober Hinweis.",
+        items: its.slice(0,5).map(feedItem)});
+      added++;
+    }
+  });
+  [["krypto","krypto"],["gold","rohstoffe"]].forEach(([gid,m])=>{
+    const g = GLOBAL.find(x=>x.id===gid); if(!g) return;
+    const its = (feed.items||[]).filter(it=>!it.loc && (it.m||[]).includes(m)).slice(0,3);
+    g.items = its.map(feedItem).concat(g.items).slice(0,6);
+  });
+  ALL.splice(0, ALL.length, ...HOTSPOTS.concat(GLOBAL));
+  if(!ALL.find(x=>x.id===selectedId)) selectedId = sorted(HOTSPOTS)[0]?.id || selectedId;
+  const st = $("#feedStamp");
+  if(st && feed.updated) st.textContent = "Schlagzeilen: " + ago(feed.updated);
+  renderAll(false);
+}
+function renderFeed(){
+  const el = $("#feedList"); if(!el) return;
+  if(!FEED){ el.innerHTML = `<li class="empty">Schlagzeilen werden geladen …</li>`; return; }
+  const its = (FEED.items||[]).filter(it => filter==="alle" || (it.m||[]).includes(filter)).slice(0,24);
+  if(!its.length){ el.innerHTML = `<li class="empty">Gerade keine Schlagzeilen für diesen Markt.</li>`; return; }
+  el.innerHTML = its.map(it=>{
+    const L = it.loc && FEED.locs ? FEED.locs[it.loc] : null;
+    const safe = /^https?:\/\//.test(it.u) ? it.u : "#";
+    return `<li class="f-row"><span class="stripe ${it.sev}"></span>
+      <a class="f-main" href="${esc(safe)}" target="_blank" rel="noopener">
+        <span class="f-meta">${esc(ago(it.p))} · ${esc(it.s)}${L?` · ${esc(L.name)}`:""}</span>
+        <span class="f-title">${esc(it.t)}</span></a></li>`;
+  }).join("");
+  const stamp = $("#feedUpdated");
+  if(stamp) stamp.textContent = FEED.updated ? "aktualisiert " + ago(FEED.updated) : "";
+}
+async function loadFeed(){
+  for(const u of FEED_URLS){
+    try{
+      const r = await fetch(u + (u.startsWith("http") ? "?t=" + Math.floor(Date.now()/60000) : ""), {cache:"no-store"});
+      if(!r.ok) continue;
+      const j = await r.json();
+      if(j && Array.isArray(j.items)){ applyFeed(j); return; }
+    }catch(e){}
+  }
+  if(!FEED){ const el = $("#feedList"); if(el) el.innerHTML = `<li class="empty">Die Schlagzeilen kommen nach dem ersten stündlichen Lauf. Bis dahin siehst du die Tagesanalyse oben.</li>`; }
+}
+loadFeed();
+setInterval(loadFeed, 10*60*1000);
 })();
 </script>
 
