@@ -237,6 +237,29 @@ body.gf .stage{animation:gfIn .45s ease}
 @media (prefers-reduced-motion:reduce){body.gf .stage,body.gf .detail{animation:none}}
 @media (orientation:portrait){body.gf .globe-box{height:calc(100% - min(34vh,300px))}body.gf .detail{max-height:min(32vh,300px)}}
 @media (max-width:560px){body.gf .ov.tl{top:calc(64px + env(safe-area-inset-top))}}
+
+/* ---------- Stimme: Portal hinter dem Globus ---------- */
+#portal{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;z-index:0}
+.globe-box{position:relative;z-index:1}
+body.gf #portal{display:block}
+.voice{display:none}
+body.gf .voice{display:flex;visibility:visible;position:fixed;z-index:7;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));flex-direction:column;align-items:center;gap:10px;width:min(560px,calc(100vw - 32px));pointer-events:none}
+body.gf .voice>*{pointer-events:auto}
+.v-mic{width:62px;height:62px;border-radius:50%;border:1px solid var(--v-c,var(--line));background:rgba(12,18,32,.72);color:var(--fg);display:grid;place-items:center;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 0 22px -6px var(--v-c,transparent);transition:box-shadow .4s ease,border-color .4s ease,transform .2s ease}
+.v-mic svg{width:26px;height:26px}
+.v-mic[data-state="listen"]{transform:scale(1.08);box-shadow:0 0 34px -2px var(--v-c)}
+.v-mic[data-state="speak"]{box-shadow:0 0 28px -4px var(--v-c)}
+.v-cap{margin:0;min-height:0;text-align:center;font-size:15px;line-height:1.45;color:var(--fg);text-shadow:0 1px 8px rgba(0,0,0,.8);max-height:22vh;overflow:auto}
+.v-cap:empty{display:none}
+.v-cap .q{display:block;font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-bottom:4px}
+.v-type{display:flex;gap:8px;width:100%}
+.v-type[hidden]{display:none}
+body.gf .detail{transition:opacity .4s ease}
+body.gf.vtalk .detail{opacity:0;pointer-events:none}
+.v-type input{flex:1;min-width:0;font:15px var(--font-body);color:var(--fg);background:rgba(12,18,32,.8);border:1px solid var(--line);border-radius:999px;padding:9px 14px}
+.v-type button{font:600 13px var(--font-body);color:#0c1220;background:var(--accent);border:0;border-radius:999px;padding:0 14px;cursor:pointer}
+/* im Vollbild die Regionskarte nicht über das Mikrofon legen */
+@media (max-width:900px){body.gf .detail{bottom:calc(110px + env(safe-area-inset-bottom))}}
 </style>
 </head>
 <body style="margin:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)">
@@ -340,12 +363,18 @@ body.gf .stage{animation:gfIn .45s ease}
 
   <section class="main">
     <div class="stage">
+      <canvas id="portal" aria-hidden="true"></canvas>
       <div class="globe-box" id="globeBox">
         <canvas id="globe" tabindex="0" aria-label="Drehbare Weltkugel mit Brennpunkten. Auswahl auch über die Liste möglich."></canvas>
       </div>
       <button type="button" class="gf-btn" id="gfBtn" aria-pressed="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg><span>Vollbild</span></button>
       <div class="ov tl"><div class="count" id="count"></div></div>
       <div class="ov bl">Ziehen zum Drehen · Punkt antippen</div>
+      <div class="voice" id="voice">
+        <p class="v-cap" id="vCap" aria-live="polite"></p>
+        <form class="v-type" id="vType" hidden><input id="vInput" type="text" placeholder="Frag das System …" autocomplete="off"><button type="submit">Senden</button></form>
+        <button type="button" class="v-mic" id="vMic" aria-label="Mit dem System sprechen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      </div>
       <div class="ov war" id="warNote">Raketen &amp; Einschläge: Kampfhandlungen laut aktuellen Meldungen · symbolisch</div>
       <p class="nomap" id="nomap" hidden>Kartendaten konnten nicht geladen werden. Die Punkte und die Liste funktionieren trotzdem.</p>
     </div>
@@ -625,6 +654,7 @@ function renderAll(rotate){
   renderList(); renderDetail(); renderCount(); renderFeed();
   if(globe){ globe.refresh(); if(rotate) globe.focus(selectedId); }
 }
+window.__radar = {all: () => ALL, select: (id) => select(id, true), cal: () => CAL};
 function select(id, rotate){
   selectedId = id;
   renderAll(rotate);
@@ -859,6 +889,9 @@ function initGlobe(){
   let meteor = null, meteorNext = null;
   const meteorTest = new URLSearchParams(location.search).has("meteor");
   const gcircle = d3.geoCircle().precision(2);
+  window.addEventListener("marktradar:meteor", ()=>{
+    if(document.body.classList.contains("gf") && !meteor) meteorNext = performance.now() + 300;
+  });
   window.addEventListener("marktradar:fullscreen", e=>{
     meteor = null; canvas.style.transform = "";
     meteorNext = e.detail.on ? performance.now() + (meteorTest ? 2000 : 20000) : null;
@@ -1616,6 +1649,7 @@ function frame(now){
   const ck = Math.min(1, dt*1.1);                       // Farbe sanft überblenden (~2 s)
   for(let i=0;i<3;i++) colCur[i] += (colTarget[i]-colCur[i]) * ck;
   const L = cur/100, col = colCur.map(Math.round);
+  window.__lageCol = col; window.__lageL = L;
   const windPx = 8 + Math.pow(L,1.5)*150;               // px pro Sekunde
   drift += windPx*dt;
   ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -1686,7 +1720,7 @@ document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && !redu
 start();
 
 function setLage(res){
-  lageScore = res.score; lastRes = res;
+  lageScore = res.score; lastRes = res; window.__lageRes = res;
   if(!region){ retarget(); }
   if(reduced){ cur = target; frame(performance.now()); }
   renderChip(res);
@@ -1742,6 +1776,215 @@ load(); setInterval(load, 10*60*1000);
   }
   btn.addEventListener("click", ()=> set(!document.body.classList.contains("gf")));
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && document.body.classList.contains("gf")) set(false); });
+})();
+</script>
+<script>
+/* ---------- Stimme: Portal + Sprachsteuerung (läuft komplett im Browser, ohne Konto) ---------- */
+(function(){
+"use strict";
+const stage = document.querySelector(".stage"), cv = document.getElementById("portal"), globe = document.getElementById("globe");
+if(!cv || !stage) return;
+const ctx = cv.getContext("2d");
+const mic = document.getElementById("vMic"), cap = document.getElementById("vCap");
+const form = document.getElementById("vType"), input = document.getElementById("vInput");
+const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let state = "idle", open = 0, openTarget = 0, pulse = 0, W = 0, H = 0, dpr = 1;
+
+/* ----- Portal zeichnen ----- */
+function size(){
+  const r = stage.getBoundingClientRect(); dpr = Math.min(window.devicePixelRatio||1, 2);
+  W = r.width; H = r.height; cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+}
+function draw(now){
+  if(!document.body.classList.contains("gf")){ requestAnimationFrame(draw); return; }
+  if(cv.width !== Math.round(stage.clientWidth*dpr) || cv.height !== Math.round(stage.clientHeight*dpr)) size();
+  const T = now/1000, col = window.__lageCol || [124,92,235];
+  // Mund-Bewegung: beim Sprechen Silben-Pulse, beim Zuhören leichtes Wellen
+  if(state === "speak") openTarget = 0.35 + 0.65*Math.max(pulse, 0.5 + 0.5*Math.sin(T*9.5)*Math.sin(T*3.7));
+  else if(state === "listen") openTarget = 0.18 + 0.08*Math.sin(T*2.4);
+  else openTarget = 0.02;
+  pulse *= 0.9;
+  open += (openTarget - open) * (state === "speak" ? 0.35 : 0.08);
+  const sr = stage.getBoundingClientRect(), gr = globe.getBoundingClientRect();
+  const cx = gr.left - sr.left + gr.width/2, cy = gr.top - sr.top + gr.height/2;
+  const R = gr.width/2/1.24;                       // Radius der Kugel im Vollbild
+  const L = Math.min(W*0.49, R*2.6), Hm = R*1.15;
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  ctx.globalCompositeOperation = "lighter";
+  // Ring um die Erde (Portal)
+  const ringA = 0.10 + 0.5*open;
+  const rg = ctx.createRadialGradient(cx,cy,R*0.98,cx,cy,R*(1.18+0.25*open));
+  rg.addColorStop(0, `rgba(${col},${ringA})`); rg.addColorStop(1, `rgba(${col},0)`);
+  ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(cx,cy,R*(1.18+0.25*open),0,6.283); ctx.fill();
+  // Mund: mehrere Wellenstränge, die sich wie Lippen öffnen
+  const strands = 4;
+  for(let k=0;k<strands;k++){
+    const ph = k*1.7 + T*(1.2 + k*0.35), amp = open*(1 - k*0.16);
+    for(const side of [-1, 1]){
+      ctx.beginPath();
+      for(let i=0;i<=120;i++){
+        const u = i/120*2 - 1, x = cx + u*L;
+        const taper = Math.pow(Math.max(0, 1 - u*u), 1.6);
+        const wave = 0.72 + 0.28*Math.sin(u*7 + ph) * Math.sin(u*3 - ph*0.6);
+        const y = cy + side*Hm*amp*taper*wave;
+        i ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
+      }
+      ctx.strokeStyle = `rgba(${col},${0.55 - k*0.1})`; ctx.lineWidth = 2.2 - k*0.35; ctx.stroke();
+    }
+  }
+  // Innenleuchten zwischen den Lippen
+  if(open > 0.05){
+    ctx.beginPath();
+    for(let i=0;i<=80;i++){ const u=i/80*2-1, t=Math.pow(Math.max(0,1-u*u),1.6); const x=cx+u*L, y=cy-Hm*open*t*0.8; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+    for(let i=80;i>=0;i--){ const u=i/80*2-1, t=Math.pow(Math.max(0,1-u*u),1.6); ctx.lineTo(cx+u*L, cy+Hm*open*t*0.8); }
+    const ig = ctx.createLinearGradient(0,cy-Hm,0,cy+Hm);
+    ig.addColorStop(0,`rgba(${col},0)`); ig.addColorStop(0.5,`rgba(${col},${0.22*open})`); ig.addColorStop(1,`rgba(${col},0)`);
+    ctx.fillStyle = ig; ctx.fill();
+  }
+  // Kernlinie
+  const lg = ctx.createLinearGradient(cx-L,0,cx+L,0);
+  lg.addColorStop(0,`rgba(${col},0)`); lg.addColorStop(0.5,"rgba(255,255,255,.9)"); lg.addColorStop(1,`rgba(${col},0)`);
+  ctx.strokeStyle = lg; ctx.lineWidth = 1.4 + open*1.5;
+  ctx.beginPath(); ctx.moveTo(cx-L, cy); ctx.lineTo(cx+L, cy); ctx.stroke();
+  ctx.globalCompositeOperation = "source-over";
+  mic.style.setProperty("--v-c", `rgb(${col})`);
+  requestAnimationFrame(draw);
+}
+size(); addEventListener("resize", size); requestAnimationFrame(draw);
+
+/* ----- Stimme ----- */
+let voice = null;
+function pickVoice(){
+  const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
+  const de = vs.filter(v => /^de/i.test(v.lang));
+  const pref = ["Markus","Yannick","Viktor","Martin","Helmut","Google Deutsch","Conrad","Stefan"];
+  voice = pref.map(n => de.find(v => v.name.includes(n))).find(Boolean) || de[0] || null;
+}
+if(window.speechSynthesis){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+let talkTimer = null;
+function setState(s){
+  state = s; mic.dataset.state = s;
+  clearTimeout(talkTimer);
+  if(s === "idle") talkTimer = setTimeout(()=>{ cap.textContent = ""; document.body.classList.remove("vtalk"); }, 9000);
+  else document.body.classList.add("vtalk");
+}
+function say(text){
+  cap.innerHTML = (lastQ ? `<span class="q">„${esc(lastQ)}“</span>` : "") + esc(text);
+  if(!window.speechSynthesis){ setState("idle"); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "de-DE"; if(voice) u.voice = voice;
+  u.rate = 0.98; u.pitch = 0.78;
+  u.onstart = () => setState("speak");
+  u.onboundary = () => { pulse = 1; };
+  u.onend = u.onerror = () => setState("idle");
+  setState("speak");
+  speechSynthesis.speak(u);
+}
+
+/* ----- Daten ----- */
+let MARKET = null;
+async function loadMarket(){
+  for(const u of ["https://raw.githubusercontent.com/qvw8mrjzby-arch/Marktadar-live-/main/market.json?t="+Math.floor(Date.now()/60000), "market.json"]){
+    try{ const r = await fetch(u,{cache:"no-store"}); if(r.ok){ MARKET = await r.json(); return; } }catch(e){}
+  }
+}
+loadMarket(); setInterval(loadMarket, 10*60*1000);
+const num = (v, d) => v.toLocaleString("de-DE",{minimumFractionDigits:d,maximumFractionDigits:d});
+const sev = {kritisch:"kritisch", beobachten:"zu beobachten", ruhig:"ruhig"};
+const ASSETS = [
+  [/bitcoin|btc/, "BTC","Bitcoin","Dollar",0], [/ethereum|eth\b|ether/, "ETH","Ethereum","Dollar",0], [/solana|sol\b/, "SOL","Solana","Dollar",2],
+  [/xrp|ripple/, "XRP","XRP","Dollar",3], [/gold/, "GOLD","Gold","Dollar je Unze",0], [/öl|oel|brent|oil/, "BRENT","Brent-Öl","Dollar je Barrel",2],
+  [/s ?& ?p|s und p|sp ?500/, "SP500","Der S&P 500","Punkten",0], [/nasdaq/, "NASDAQ","Der Nasdaq","Punkten",0], [/dax/, "DAX","Der DAX","Punkten",0],
+  [/euro|eur ?usd|dollar/, "EURUSD","Der Euro","Dollar",4], [/rendite|anleihe|zins/, "US10Y","Die zehnjährige US-Rendite","Prozent",2]
+];
+const englishy = t => /\b(the|to|of|and|is|as|in|for|on|with)\b/i.test(t) && !/[äöüß]/i.test(t);
+
+function answer(qRaw){
+  const q = qRaw.toLowerCase();
+  const R = window.__radar, lage = window.__lageRes;
+  if(/meteor|asteroid|komet/.test(q)){ window.dispatchEvent(new CustomEvent("marktradar:meteor")); return "Einschlag wird eingeleitet. Festhalten."; }
+  if(/^(hallo|hi|hey|servus|moin)|wer bist du|was kannst du/.test(q))
+    return "Ich bin das Schurkensystem. Frag mich nach der Lage, nach einem Kurs wie Bitcoin oder Gold, nach einer Region oder danach, wo gerade Krieg ist.";
+  if(/danke/.test(q)) return "Jederzeit.";
+  if(/krieg|kämpf|kampf|angriff|rakete/.test(q)){
+    const z = (window.__warZones && window.__warZones()) || [];
+    return z.length ? `Laut den aktuellen Meldungen gibt es Kampfhandlungen in: ${z.join(", ")}.` : "In den aktuellen Meldungen finde ich gerade keine Kampfhandlungen.";
+  }
+  if(/angst|gier|stimmung|fear|greed/.test(q) && MARKET && MARKET.fng){
+    const s = MARKET.fng.stocks, c = MARKET.fng.crypto;
+    return `Die Aktien-Stimmung steht bei ${s.value}, also ${s.label}. Bei Krypto liegt sie bei ${c.value}, ${c.label}.`;
+  }
+  if(/termin|kalender|was kommt|nächste woche|demnächst/.test(q) && R){
+    const MON = {jan:0,feb:1,mär:2,mar:2,apr:3,mai:4,jun:5,jul:6,aug:7,sep:8,okt:9,nov:10,dez:11};
+    const now = new Date(); now.setHours(0,0,0,0);
+    const up = R.cal().filter(x => {
+      const m = String(x.d).match(/(\d{1,2})\.[^a-zäöü]*([a-zäöü]{3})/i);
+      if(!m || MON[m[2].toLowerCase()] == null) return true;
+      const d = new Date(now.getFullYear(), MON[m[2].toLowerCase()], +m[1]);
+      const end = String(x.d).match(/–\s*(\d{1,2})\./); if(end) d.setDate(+end[1]);
+      return d >= now;
+    }).slice(0,4);
+    if(!up.length) return "Im Kalender stehen gerade keine kommenden Termine.";
+    return "Die nächsten wichtigen Termine. " + up.map(x => `${x.d.replace("≈","etwa")}: ${x.t}`).join(". ") + ".";
+  }
+  // Region?
+  if(R){
+    const hit = R.all().filter(h => h.lat != null).find(h => {
+      const words = (h.name + " " + (/live/i.test(h.place||"") ? "" : (h.place||""))).toLowerCase().split(/[^a-zäöüß]+/).filter(w => w.length >= 4);
+      return words.some(w => q.includes(w));
+    });
+    if(hit){
+      R.select(hit.id);
+      const it = (hit.items||[]).find(i => !englishy(i.title));
+      const n = (hit.items||[]).length;
+      return `${hit.name}. Einstufung: ${sev[hit.sev]}. ${hit.why}` + (it ? ` Neueste Meldung: ${it.title}.` : n ? ` Es gibt ${n} Meldungen dazu, die neuesten sind auf Englisch und stehen in der Karte.` : "");
+    }
+  }
+  // Kurs?
+  const a = ASSETS.find(x => x[0].test(q));
+  if(a){
+    const p = MARKET && MARKET.prices && MARKET.prices[a[1]];
+    if(!p) return `Den Kurs von ${a[2]} habe ich gerade nicht.`;
+    const ch = p.chg;
+    return `${a[2]} steht bei ${num(p.price, a[4])} ${a[3]}, ${ch >= 0 ? "plus" : "minus"} ${num(Math.abs(ch),1)} Prozent.`;
+  }
+  if(/lage|überblick|status|wie sieht|was ist los|was geht|markt/.test(q) && lage){
+    const name = lage.score < 30 ? "ruhig" : lage.score < 50 ? "normal" : lage.score < 70 ? "angespannt" : "Alarm";
+    const crit = R ? R.all().filter(h => h.sev === "kritisch" && h.lat != null).slice(0,3).map(h => h.name) : [];
+    return `Gesamtlage: ${name}, ${lage.score} von 100.` + (crit.length ? ` Am kritischsten sind gerade ${crit.join(", ")}.` : "") + " Das ist eine Stimmungsanzeige, keine Anlageberatung.";
+  }
+  return "Das kann ich leider nicht beantworten. Frag mich nach der Lage, einem Kurs, einer Region oder danach, wo Krieg ist.";
+}
+
+/* ----- Zuhören ----- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, lastQ = "";
+function ask(text){
+  lastQ = text.trim(); if(!lastQ) { setState("idle"); return; }
+  say(answer(lastQ));
+}
+function listen(){
+  if(window.speechSynthesis){ speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance("")); } // iPad: Ton freischalten
+  if(!SR){ form.hidden = false; input.focus(); cap.textContent = "Spracheingabe geht in diesem Browser nicht. Tipp deine Frage ein."; return; }
+  if(state === "listen" && rec){ rec.stop(); return; }
+  rec = new SR(); rec.lang = "de-DE"; rec.interimResults = true; rec.maxAlternatives = 1;
+  let finalText = "";
+  rec.onstart = () => { setState("listen"); cap.innerHTML = '<span class="q">Ich höre …</span>'; };
+  rec.onresult = e => {
+    let t = ""; for(const r of e.results){ t += r[0].transcript; if(r.isFinal) finalText = t; }
+    cap.innerHTML = `<span class="q">„${esc(t)}“</span>`;
+  };
+  rec.onerror = e => { setState("idle"); if(e.error === "not-allowed" || e.error === "service-not-allowed"){ form.hidden = false; cap.textContent = "Kein Zugriff aufs Mikrofon. Erlaube es in den Einstellungen oder tipp deine Frage ein."; } };
+  rec.onend = () => { if(finalText) ask(finalText); else if(state === "listen") setState("idle"); };
+  try{ rec.start(); }catch(e){ form.hidden = false; }
+}
+mic.addEventListener("click", listen);
+mic.addEventListener("contextmenu", e => { e.preventDefault(); form.hidden = !form.hidden; if(!form.hidden) input.focus(); });
+form.addEventListener("submit", e => { e.preventDefault(); const t = input.value; input.value = ""; ask(t); });
+window.addEventListener("marktradar:fullscreen", e => { if(!e.detail.on){ if(window.speechSynthesis) speechSynthesis.cancel(); if(rec) try{ rec.abort(); }catch(_){} setState("idle"); cap.textContent = ""; document.body.classList.remove("vtalk"); form.hidden = true; } });
+window.__ask = ask; window.__voiceState = setState;
 })();
 </script>
 <script>
