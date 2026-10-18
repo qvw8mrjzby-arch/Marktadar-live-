@@ -1474,5 +1474,24 @@ load(); setInterval(load, 10*60*1000);
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && document.body.classList.contains("gf")) set(false); });
 })();
 </script>
+<script>
+/* Auto-Update: merkt, wenn eine neue Version der Seite online ist, und lädt sie neu */
+(function(){
+  const hash = t => { let h = 0; for(let i=0;i<t.length;i++){ h = (h*31 + t.charCodeAt(i))|0; } return h; };
+  let base = null;
+  async function check(){
+    try{
+      const r = await fetch("index.html?u=" + Date.now(), {cache:"no-store"});
+      if(!r.ok) return;
+      const h = hash(await r.text());
+      if(base === null){ base = h; return; }
+      if(h !== base && !document.body.classList.contains("gf")) location.reload();
+    }catch(e){}
+  }
+  check();
+  setInterval(check, 5*60*1000);
+  document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) check(); });
+})();
+</script>
 </body>
 </html>
