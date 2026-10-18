@@ -602,6 +602,8 @@ function renderAll(rotate){
 function select(id, rotate){
   selectedId = id;
   renderAll(rotate);
+  const h = ALL.find(x=>x.id===id);
+  if(h) window.dispatchEvent(new CustomEvent("marktradar:region", {detail:{id:h.id, name:h.name, sev:h.sev}}));
 }
 
 /* ---------- Weltkugel ---------- */
@@ -1228,18 +1230,22 @@ const btn = $("#lageBtn"), panel = $("#lagePanel");
 btn.addEventListener("click", ()=>{
   const open = panel.hidden; panel.hidden = !open; btn.setAttribute("aria-expanded", open?"true":"false");
 });
-function renderChip(res){
-  const v = res.score, c = lageRGB(v);
-  btn.style.setProperty("--lage-c", rgba(c,1));
-  btn.dataset.hot = v>=70 ? "1" : "0";
-  $("#lageLbl").textContent = "Lage: " + lageName(v);
-  $("#lageNum").textContent = v + "/100" + (forced!=null ? " · Test" : "");
+function fillRows(res){
   $("#lageRows").innerHTML = res.parts.map(p=>{
     const pc = lageRGB(p.v);
     return `<li><span class="lr-top"><span>${esc(p.k)}</span><b>${Math.round(p.v)}</b></span>
       <span class="lr-bar"><i style="width:${clamp(p.v,2,100)}%;background:${rgba(pc,1)}"></i></span>
       <span class="lr-txt">${esc(p.txt)}</span></li>`;
   }).join("");
+}
+function renderChip(res){
+  fillRows(res);
+  if(btn.dataset.region === "1") return;               // gerade ist eine Region ausgewählt
+  const v = res.score, c = lageRGB(v);
+  btn.style.setProperty("--lage-c", rgba(c,1));
+  btn.dataset.hot = v>=70 ? "1" : "0";
+  $("#lageLbl").textContent = "Lage: " + lageName(v);
+  $("#lageNum").textContent = v + "/100" + (forced!=null ? " · Test" : "");
   const meta = document.querySelector('meta[name="theme-color"]');
   if(meta) meta.setAttribute("content", v>=70 ? "#1a0b10" : "#0c1220");
 }
@@ -1248,6 +1254,14 @@ function renderChip(res){
    Ruhig: kaum Dunst, blaue Sterne, fast windstill. Alarm: dichter roter Nebel, schneller Wind. */
 const cv = $("#lageBg"), ctx = cv.getContext("2d");
 let W=0, H=0, dpr=1, target=35, cur=35, last=performance.now(), T=0, drift=0;
+let lageScore = 35, region = null;
+const REGION_COL = {kritisch:[236,48,58], beobachten:[240,158,48], ruhig:[58,186,148]};
+const REGION_LVL = {kritisch:88, beobachten:55, ruhig:18};
+let colCur = lageRGB(35).slice(), colTarget = colCur.slice();
+function retarget(){
+  if(region){ target = REGION_LVL[region.sev] ?? lageScore; colTarget = REGION_COL[region.sev] || lageRGB(lageScore); }
+  else { target = lageScore; colTarget = lageRGB(lageScore); }
+}
 
 /* nahtlos kachelbares Rauschen als Nebel-Textur */
 const TS = 256;
@@ -1315,8 +1329,10 @@ function drawFogLayer(img, size, ox, oy, alpha){
 
 function frame(now){
   const dt = Math.min(50, now-last)/1000; last = now; T += dt;
-  cur += (target-cur) * Math.min(1, dt*0.5);           // Lage-Wechsel weich einblenden
-  const L = cur/100, col = lageRGB(cur);
+  cur += (target-cur) * Math.min(1, dt*0.5);           // Dichte/Wind weich nachziehen
+  const ck = Math.min(1, dt*1.1);                       // Farbe sanft überblenden (~2 s)
+  for(let i=0;i<3;i++) colCur[i] += (colTarget[i]-colCur[i]) * ck;
+  const L = cur/100, col = colCur.map(Math.round);
   const windPx = 8 + Math.pow(L,1.5)*150;               // px pro Sekunde
   drift += windPx*dt;
   ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -1380,10 +1396,29 @@ document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && !redu
 start();
 
 function setLage(res){
-  target = res.score;
+  lageScore = res.score; lastRes = res;
+  if(!region){ retarget(); }
   if(reduced){ cur = target; frame(performance.now()); }
   renderChip(res);
 }
+
+window.addEventListener("marktradar:region", e=>{
+  region = e.detail; retarget();
+  btn.dataset.region = "1";
+  $("#lageLbl").textContent = region.name;
+  $("#lageNum").textContent = ({kritisch:"Kritisch",beobachten:"Beobachten",ruhig:"Ruhig"})[region.sev] + " · zurück zur Lage";
+  btn.style.setProperty("--lage-c", rgba(REGION_COL[region.sev]||[150,160,180],1));
+  btn.dataset.hot = region.sev==="kritisch" ? "1" : "0";
+  if(reduced){ cur = target; colCur = colTarget.slice(); frame(performance.now()); }
+});
+btn.addEventListener("click", e=>{
+  if(!region) return;
+  e.stopImmediatePropagation();                         // erster Tipp: nur zurück zur Gesamtlage
+  region = null; delete btn.dataset.region; retarget();
+  if(lastRes) renderChip(lastRes);
+  if(reduced){ cur = target; colCur = colTarget.slice(); frame(performance.now()); }
+}, true);
+let lastRes = null;
 
 async function load(){
   if(forced!=null){
