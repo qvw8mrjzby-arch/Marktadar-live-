@@ -230,7 +230,10 @@ const INTENTS = [
   // --- Steuerung ---
   {t:q=>has(q,/langsamer/), r:()=>{ J.rate = Math.max(0.7, J.rate-0.12); return "In Ordnung. Ich spreche jetzt langsamer."; }},
   {t:q=>has(q,/schneller/), r:()=>{ J.rate = Math.min(1.35, J.rate+0.12); return "Gut, ich spreche schneller."; }},
-  {t:q=>has(q,/normal (sprechen|tempo)|normales tempo/), r:()=>{ J.rate = 0.98; return "Normales Tempo."; }},
+  {t:q=>has(q,/normal (sprechen|tempo)|normales tempo/), r:()=>{ J.rate = 0.94; return "Normales Tempo."; }},
+  {t:q=>has(q,/andere stimme|stimme wechseln|neue stimme|nachste stimme|nächste stimme|wechsel die stimme|andere sprechstimme/), r:()=>{ const n = window.__nextVoice && window.__nextVoice(); return n ? `So klinge ich mit der Stimme ${n}. Gefällt sie Ihnen? Sonst sagen Sie einfach noch einmal: Andere Stimme.` : "Auf diesem Gerät gibt es nur eine deutsche Stimme. In den Einstellungen unter Bedienungshilfen, Gesprochene Inhalte, Stimmen können Sie weitere laden."; }},
+  {t:q=>has(q,/welche stimme|wie heisst deine stimme/), r:()=>{ const n = window.__voiceName && window.__voiceName(); return n ? `Ich spreche gerade mit der Stimme ${n}.` : "Ich nutze die Standardstimme dieses Geräts."; }},
+  {t:q=>has(q,/(stimme|die) (gefallt|gefällt) mir|behalte (die|diese) stimme|die ist gut/), r:()=> "Sehr gut, dann bleibe ich bei dieser Stimme."},
   {t:q=>has(q,/wiederhol|nochmal sagen|noch mal sagen|was hast du gesagt|wie bitte/), r:()=> mem.last ? "Gern. " + mem.last : "Ich habe noch nichts gesagt."},
   {t:q=>has(q,/vollbild (schliess|beend|aus|zu)|schliess das vollbild|beende das vollbild/), r:()=>{ setTimeout(()=>{ const b=document.getElementById("gfBtn"); if(document.body.classList.contains("gf")) b.click(); }, 1800); return "Ich schließe das Vollbild."; }},
   {t:q=>has(q,/meteor|asteroid|komet|einschlag/), r:()=>{ window.dispatchEvent(new CustomEvent("marktradar:meteor")); return rnd(["Einschlag wird eingeleitet. Festhalten.", "Meteorit unterwegs. Das wird laut.", "Achtung, Objekt im Anflug."]); }},
@@ -327,7 +330,7 @@ const INTENTS = [
 
 /* ---------- Hauptfunktion ---------- */
 const J = window.Jarvis = {
-  rate: 0.98,
+  rate: 0.94,
   greeting(){
     const L = window.__lageRes;
     const tail = L ? (L.score >= 70 ? " Die Lage ist angespannt, ich behalte alles im Blick." : L.score < 30 ? " Die Märkte sind ruhig." : "") : "";

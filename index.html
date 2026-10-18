@@ -1783,7 +1783,7 @@ load(); setInterval(load, 10*60*1000);
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && document.body.classList.contains("gf")) set(false); });
 })();
 </script>
-<script src="jarvis.js?v=1"></script>
+<script src="jarvis.js?v=2"></script>
 <script>
 /* ---------- Stimme: Portal + Sprachsteuerung (läuft komplett im Browser, ohne Konto) ---------- */
 (function(){
@@ -1861,12 +1861,35 @@ size(); addEventListener("resize", size); requestAnimationFrame(draw);
 
 /* ----- Stimme ----- */
 let voice = null;
-function pickVoice(){
-  const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
-  const de = vs.filter(v => /^de/i.test(v.lang));
-  const pref = ["Markus","Yannick","Viktor","Martin","Helmut","Google Deutsch","Conrad","Stefan"];
-  voice = pref.map(n => de.find(v => v.name.includes(n))).find(Boolean) || de[0] || null;
+/* Stimme: hochwertige deutsche Stimmen bevorzugen, Spaß-/Roboterstimmen ausschließen */
+function voiceScore(v){
+  const n = (v.name + " " + (v.voiceURI||"")).toLowerCase();
+  let sc = 0;
+  if(/premium|enhanced|erweitert|natural|neural|siri/.test(n)) sc += 10;
+  if(/markus|yannick|viktor|martin|conrad|stefan|helmut|daniel|killian/.test(n)) sc += 5;
+  if(/google/.test(n)) sc += 3;
+  if(v.localService) sc += 1;
+  if(/grandpa|grandma|eddy|flo\b|reed|rocko|sandy|shelley|albert|bahh|bells|boing|bubbles|cellos|wobble|zarvox|trinoid|whisper|jester|organ|superstar|bad news|good news|fred|junior|ralph|kathy/.test(n)) sc -= 30;
+  return sc;
 }
+function germanVoices(){
+  const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
+  return vs.filter(v => /^de/i.test(v.lang)).sort((a,b) => voiceScore(b) - voiceScore(a));
+}
+function pickVoice(){
+  const de = germanVoices();
+  let saved = null; try{ saved = localStorage.getItem("jarvis.voice"); }catch(e){}
+  voice = (saved && de.find(v => v.name === saved)) || de[0] || null;
+}
+window.__voiceName = () => voice ? voice.name.replace(/\s*\(.*\)\s*/,"") : "";
+window.__nextVoice = () => {
+  const de = germanVoices().filter(v => voiceScore(v) > -10);
+  if(de.length < 2) return null;
+  const i = voice ? de.findIndex(v => v.name === voice.name) : -1;
+  voice = de[(i + 1) % de.length];
+  try{ localStorage.setItem("jarvis.voice", voice.name); }catch(e){}
+  return window.__voiceName();
+};
 if(window.speechSynthesis){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 let talkTimer = null;
 function setState(s){
@@ -1875,18 +1898,35 @@ function setState(s){
   if(s === "idle") talkTimer = setTimeout(()=>{ cap.textContent = ""; document.body.classList.remove("vtalk"); }, 9000);
   else document.body.classList.add("vtalk");
 }
+/* Sprechen: Satz für Satz mit kurzen Pausen, natürliche Tonhöhe -> klingt menschlicher */
+let sayId = 0;
+function speakable(t){
+  return t.replace(/S ?& ?P/g, "S und P").replace(/&/g, " und ").replace(/\s+·\s+/g, ", ").replace(/≈\s*/g, "etwa ").replace(/\s+\/\s+/g, " und ");
+}
 function say(text){
   cap.innerHTML = (lastQ ? `<span class="q">„${esc(lastQ)}“</span>` : "") + esc(text);
-  if(!window.speechSynthesis){ setState("idle"); window.dispatchEvent(new Event("jarvis:spoken")); return; }
+  const done = () => { setState("idle"); window.dispatchEvent(new Event("jarvis:spoken")); };
+  if(!window.speechSynthesis){ done(); return; }
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "de-DE"; if(voice) u.voice = voice;
-  u.rate = (window.Jarvis && Jarvis.rate) || 0.98; u.pitch = 0.78;
-  u.onstart = () => setState("speak");
-  u.onboundary = () => { pulse = 1; };
-  u.onend = u.onerror = () => { setState("idle"); window.dispatchEvent(new Event("jarvis:spoken")); };
+  const id = ++sayId;
+  // Sätze trennen, aber nicht bei Zahlen wie 81.682 oder 28. Okt
+  const parts = speakable(text).split(/(?<=[a-zäöüß)"“][.!?])\s+(?=[A-ZÄÖÜ„"])/).map(x => x.trim()).filter(Boolean);
+  let i = 0;
   setState("speak");
-  speechSynthesis.speak(u);
+  const next = () => {
+    if(id !== sayId) return;
+    if(i >= parts.length){ done(); return; }
+    const u = new SpeechSynthesisUtterance(parts[i++]);
+    u.lang = "de-DE"; if(voice) try{ u.voice = voice; }catch(e){}
+    u.rate = (window.Jarvis && Jarvis.rate) || 0.94;
+    u.pitch = 0.96; u.volume = 1;
+    u.onstart = () => { if(id === sayId) setState("speak"); };
+    u.onboundary = () => { pulse = 1; };
+    u.onend = () => setTimeout(next, 170);                  // kleine Atempause zwischen Sätzen
+    u.onerror = e => { if(e && (e.error === "interrupted" || e.error === "canceled")) return; setTimeout(next, 0); };
+    speechSynthesis.speak(u);
+  };
+  next();
 }
 
 /* ----- Daten ----- */
