@@ -235,7 +235,7 @@ canvas.dragging{cursor:grabbing}
   <section class="lage-panel" id="lagePanel" hidden aria-label="So entsteht die Marktlage">
     <h3>So entsteht die Lage</h3>
     <ul class="lage-rows" id="lageRows"></ul>
-    <p class="lage-scale">0–30 ruhig · 30–50 normal · 50–70 angespannt · ab 70 Alarm. Je höher der Wert, desto röter und schneller wird der Hintergrund. Das ist eine Stimmungsanzeige, kein Kauf- oder Verkaufssignal.</p>
+    <p class="lage-scale">0–30 ruhig · 30–50 normal · 50–70 angespannt · ab 70 Alarm. Je höher der Wert, desto dichter und röter zieht der Nebel durchs Bild. Das ist eine Stimmungsanzeige, kein Kauf- oder Verkaufssignal.</p>
   </section>
 
   <section class="tape" aria-label="Laufendes Kursband">
@@ -1172,7 +1172,7 @@ const params = new URLSearchParams(location.search);
 const forced = params.has("lage") ? clamp(parseFloat(params.get("lage"))||0, 0, 100) : null;
 
 /* Farbverlauf der Lage: blau/lila (ruhig) → orange → rot */
-const STOPS = [[0,[80,110,210]],[35,[124,92,235]],[55,[240,150,50]],[72,[255,80,60]],[100,[210,20,40]]];
+const STOPS = [[0,[80,110,210]],[35,[124,92,235]],[52,[240,150,50]],[66,[240,60,55]],[100,[200,18,40]]];
 function lageRGB(v){
   for(let i=1;i<STOPS.length;i++){
     const [b,cb] = STOPS[i], [a,ca] = STOPS[i-1];
@@ -1244,100 +1244,133 @@ function renderChip(res){
   if(meta) meta.setAttribute("content", v>=70 ? "#1a0b10" : "#0c1220");
 }
 
-/* ---------- Hintergrund-Animation ---------- */
+/* ---------- Hintergrund: Nebel, der mit dem Wind zieht ----------
+   Ruhig: kaum Dunst, blaue Sterne, fast windstill. Alarm: dichter roter Nebel, schneller Wind. */
 const cv = $("#lageBg"), ctx = cv.getContext("2d");
-let W=0, H=0, dpr=1, target=35, cur=35, t0=performance.now(), last=t0, spin=0;
-const STARS = [];
+let W=0, H=0, dpr=1, target=35, cur=35, last=performance.now(), T=0, drift=0;
+
+/* nahtlos kachelbares Rauschen als Nebel-Textur */
+const TS = 256;
+function makeNoise(seed, grids, lo, hi){
+  let sd = seed; const rnd = () => (sd = (sd*16807) % 2147483647) / 2147483647;
+  const acc = new Float32Array(TS*TS); let amp = 1, tot = 0;
+  for(const g of grids){
+    const grid = new Float32Array(g*g).map(rnd), cell = TS/g;
+    for(let y=0;y<TS;y++){
+      const gy=y/cell, y0=Math.floor(gy)%g, y1=(y0+1)%g, fy=gy-Math.floor(gy), sy=fy*fy*(3-2*fy);
+      for(let x=0;x<TS;x++){
+        const gx=x/cell, x0=Math.floor(gx)%g, x1=(x0+1)%g, fx=gx-Math.floor(gx), sx=fx*fx*(3-2*fx);
+        const top = grid[y0*g+x0] + (grid[y0*g+x1]-grid[y0*g+x0])*sx;
+        const bot = grid[y1*g+x0] + (grid[y1*g+x1]-grid[y1*g+x0])*sx;
+        acc[y*TS+x] += amp*(top + (bot-top)*sy);
+      }
+    }
+    tot += amp; amp *= 0.55;
+  }
+  const c = document.createElement("canvas"); c.width = c.height = TS;
+  const x = c.getContext("2d"), im = x.createImageData(TS,TS);
+  for(let i=0;i<TS*TS;i++){
+    let v = clamp((acc[i]/tot - lo)/(hi-lo), 0, 1); v = v*v*(3-2*v);
+    im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=255; im.data[i*4+3]=Math.round(v*255);
+  }
+  x.putImageData(im,0,0); return c;
+}
+const NOISE = [makeNoise(1337,[2,4,8,16,32],0.30,0.78), makeNoise(90210,[4,8,16,32,64],0.36,0.80)];
+const TINT = NOISE.map(()=>{ const c=document.createElement("canvas"); c.width=c.height=TS; return c; });
+let tintKey = "";
+function retint(col){
+  const key = col.join(","); if(key===tintKey) return; tintKey = key;
+  TINT.forEach((c,i)=>{ const x=c.getContext("2d");
+    x.globalCompositeOperation="copy"; x.drawImage(NOISE[i],0,0);
+    x.globalCompositeOperation="source-in"; x.fillStyle=rgba(col,1); x.fillRect(0,0,TS,TS); });
+}
+const fog = document.createElement("canvas"), fctx = fog.getContext("2d");
+const FOGDIV = 4;
+
+const STARS = [], WIND = [];
 function resize(){
   dpr = Math.min(window.devicePixelRatio||1, 1.5);
   W = innerWidth; H = innerHeight;
   cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
-  const want = Math.round(clamp(W*H/5200, 120, 320));
-  while(STARS.length < want) STARS.push(newStar(true));
-  STARS.length = want;
+  fog.width = Math.ceil(W/FOGDIV); fog.height = Math.ceil(H/FOGDIV);
+  STARS.length = 0;
+  const n = Math.round(clamp(W*H/9000, 60, 180));
+  for(let i=0;i<n;i++) STARS.push({x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.1+0.3, ph:Math.random()*6.28, sp:0.4+Math.random()*1.2});
+  WIND.length = 0;
+  for(let i=0;i<70;i++) WIND.push(newGust(true));
 }
-function newStar(anyZ){
-  return {x:(Math.random()*2-1), y:(Math.random()*2-1), z: anyZ ? Math.random()*0.95+0.05 : 1, pz:null, tint:Math.random()};
+function newGust(any){
+  return {x: any ? Math.random()*W : -Math.random()*W*0.3, y: Math.random()*H, k: 0.5+Math.random()*0.9, ph: Math.random()*6.28, len: 0.6+Math.random()*0.8};
 }
-function center(){ return [W/2, Math.min(H*0.26, 260)]; }
+
+function drawFogLayer(img, size, ox, oy, alpha){
+  const fw = fog.width, fh = fog.height;
+  ox = ((ox % size) + size) % size; oy = ((oy % size) + size) % size;
+  fctx.globalAlpha = alpha;
+  for(let y = -oy; y < fh; y += size)
+    for(let x = -ox; x < fw; x += size)
+      fctx.drawImage(img, x, y, size+0.5, size+0.5);
+  fctx.globalAlpha = 1;
+}
 
 function frame(now){
-  const dt = Math.min(50, now-last)/1000; last = now;
-  cur += (target-cur) * Math.min(1, dt*0.6);           // weich hochfahren
-  const L = cur/100;
-  const col = lageRGB(cur);
-  const [cx,cy] = center();
-  const R = Math.hypot(Math.max(cx,W-cx), Math.max(cy,H-cy));
+  const dt = Math.min(50, now-last)/1000; last = now; T += dt;
+  cur += (target-cur) * Math.min(1, dt*0.5);           // Lage-Wechsel weich einblenden
+  const L = cur/100, col = lageRGB(cur);
+  const windPx = 8 + Math.pow(L,1.5)*150;               // px pro Sekunde
+  drift += windPx*dt;
   ctx.setTransform(dpr,0,0,dpr,0,0);
 
-  // Grund
-  ctx.fillStyle = "#0c1220"; ctx.fillRect(0,0,W,H);
+  // Grund + leichter Bodenschein in der Lagefarbe
+  ctx.fillStyle = "#0b101c"; ctx.fillRect(0,0,W,H);
+  const gl = ctx.createLinearGradient(0,H,0,0);
+  gl.addColorStop(0, rgba(col, 0.10+0.22*L)); gl.addColorStop(0.6, rgba(col, 0.03+0.05*L)); gl.addColorStop(1, rgba(col,0));
+  ctx.fillStyle = gl; ctx.fillRect(0,0,W,H);
 
-  // Nebel / Strudel – wird mit der Lage größer, dichter und dreht schneller
-  spin += dt * (0.04 + L*L*0.9);
-  const arms = 3, neb = 0.05 + L*0.42;
-  ctx.globalCompositeOperation = "lighter";
-  for(let i=0;i<arms;i++){
-    const a = spin + i*Math.PI*2/arms;
-    const off = R*(0.10 + 0.10*L);
-    const x = cx + Math.cos(a)*off, y = cy + Math.sin(a)*off*0.55;
-    const g = ctx.createRadialGradient(x,y,0,x,y,R*(0.35+0.25*L));
-    g.addColorStop(0, rgba(col, neb*0.9));
-    g.addColorStop(0.5, rgba(col, neb*0.35));
-    g.addColorStop(1, rgba(col, 0));
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // Sterne – verschwinden, wenn der Nebel dicht wird
+  const starA = clamp(0.75 - L*0.9, 0.05, 0.75);
+  ctx.fillStyle = "#e8ecff";
+  for(const s of STARS){
+    ctx.globalAlpha = starA * (0.55 + 0.45*Math.sin(T*s.sp + s.ph));
+    ctx.beginPath(); ctx.arc((s.x + drift*0.03) % W, s.y, s.r, 0, 6.283); ctx.fill();
   }
-  // Spiralarme ab "angespannt"
-  if(L > 0.45){
-    const k = (L-0.45)/0.55;
-    ctx.lineCap = "round";
-    for(let i=0;i<arms*2;i++){
-      ctx.beginPath();
-      for(let s=0;s<=40;s++){
-        const r = 30 + s*R*0.018;
-        const a = -spin*1.6 + i*Math.PI/arms + s*0.17;
-        const x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r*0.6;
-        s ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
-      }
-      ctx.strokeStyle = rgba(col, 0.06*k); ctx.lineWidth = 22 + 30*k; ctx.stroke();
-    }
-  }
-  ctx.globalCompositeOperation = "source-over";
-  // dunkles Auge in der Mitte
-  const eye = ctx.createRadialGradient(cx,cy,0,cx,cy,R*(0.06+0.08*L));
-  eye.addColorStop(0, `rgba(6,8,14,${0.5+0.4*L})`); eye.addColorStop(1, "rgba(6,8,14,0)");
-  ctx.fillStyle = eye; ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha = 1;
 
-  // Sterne -> Warp-Streifen
-  const speed = 0.02 + Math.pow(L,2.2)*1.6;            // ruhig: fast stehend, Alarm: Warp
-  const fov = Math.min(W,H)*0.9;
-  for(const st of STARS){
-    st.pz = st.z;
-    st.z -= speed*dt*(0.6+st.tint*0.6);
-    if(st.z <= 0.02){ Object.assign(st, newStar(false)); st.pz = st.z; continue; }
-    const sx = cx + st.x/st.z*fov, sy = cy + st.y/st.z*fov*0.8;
-    const px = cx + st.x/st.pz*fov, py = cy + st.y/st.pz*fov*0.8;
-    if(sx<-50||sx>W+50||sy<-50||sy>H+50){ Object.assign(st, newStar(false)); continue; }
-    const near = 1-st.z;
-    const a = clamp(near*1.2, 0.08, 0.95);
-    const c = st.tint > 0.55 - L*0.4 ? [235,238,255] : col;
-    const len = 1 + speed*6;
-    ctx.strokeStyle = rgba(c, a);
-    ctx.lineWidth = 0.6 + near*1.6;
-    ctx.beginPath();
-    ctx.moveTo(px - (sx-px)*len, py - (sy-py)*len);
-    ctx.lineTo(sx, sy);
-    ctx.stroke();
-    if(speed < 0.15){ ctx.fillStyle = rgba(c,a); ctx.fillRect(sx-0.7,sy-0.7,1.4,1.4); }
+  // Nebel in zwei Schichten (hinten langsam, vorne schneller) -> Tiefe wie bei echtem Wind
+  retint(col);
+  const fw = fog.width, fh = fog.height, big = Math.max(fw,fh);
+  fctx.globalCompositeOperation = "source-over";
+  fctx.clearRect(0,0,fw,fh);
+  const fogA = 0.10 + 0.70*Math.pow(L,1.25);
+  drawFogLayer(TINT[0], big*1.6, drift/FOGDIV*0.45, Math.sin(T*0.05)*big*0.08, fogA);
+  drawFogLayer(TINT[1], big*1.05, drift/FOGDIV*0.9, Math.cos(T*0.07)*big*0.06 + T*0.6, fogA*0.75);
+  // Nebel kommt von unten und von den Seiten, oben bleibt es klarer (Lesbarkeit)
+  fctx.globalCompositeOperation = "destination-in";
+  const m = fctx.createLinearGradient(0,0,0,fh);
+  m.addColorStop(0, `rgba(0,0,0,${0.25+0.35*L})`); m.addColorStop(0.45, `rgba(0,0,0,${0.6+0.3*L})`); m.addColorStop(1, "rgba(0,0,0,1)");
+  fctx.fillStyle = m; fctx.fillRect(0,0,fw,fh);
+  fctx.globalCompositeOperation = "source-over";
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(fog, 0, 0, W, H);
+
+  // feine Windlinien – mehr und schneller, je schlechter die Lage
+  const active = Math.round(6 + L*60);
+  ctx.lineCap = "round";
+  for(let i=0;i<WIND.length;i++){
+    const g = WIND[i];
+    g.x += windPx * 2.2 * g.k * dt;
+    if(g.x - 400 > W) Object.assign(g, newGust(false));
+    if(i >= active) continue;
+    const len = (50 + L*220) * g.len;
+    const wy = g.y + Math.sin(T*0.6 + g.ph + g.x*0.004) * (10 + 18*L);
+    const bend = Math.sin(T*0.8 + g.ph) * (6 + 10*L);
+    const a = (0.05 + 0.22*L) * g.k;
+    const gr = ctx.createLinearGradient(g.x-len, 0, g.x, 0);
+    gr.addColorStop(0, rgba(col,0)); gr.addColorStop(0.7, rgba(col, a)); gr.addColorStop(1, `rgba(255,236,236,${a*1.2})`);
+    ctx.strokeStyle = gr; ctx.lineWidth = 0.8 + 0.6*g.k;
+    ctx.beginPath(); ctx.moveTo(g.x-len, wy+bend*0.4); ctx.quadraticCurveTo(g.x-len*0.5, wy-bend, g.x, wy); ctx.stroke();
   }
 
-  // Rand-Glühen bei Alarm
-  if(L > 0.7){
-    const k = (L-0.7)/0.3, pulse = 0.75 + 0.25*Math.sin(now/600);
-    const v = ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.35,W/2,H/2,Math.hypot(W,H)*0.6);
-    v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, rgba([200,20,40], 0.28*k*pulse));
-    ctx.fillStyle = v; ctx.fillRect(0,0,W,H);
-  }
   if(!reduced && !document.hidden) requestAnimationFrame(frame);
 }
 function start(){ last = performance.now(); requestAnimationFrame(frame); }
