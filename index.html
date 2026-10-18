@@ -760,6 +760,7 @@ function initGlobe(){
     });
     drawWar(t);
     drawSat(t);
+    drawMeteor(t);
   }
 
   /* ---------- Kriegsgebiete: Raketenbögen + Einschläge (nur im Vollbild) ----------
@@ -848,6 +849,101 @@ function initGlobe(){
       const ember = ctx.createRadialGradient(x,y,0,x,y,8*sc);
       ember.addColorStop(0,`rgba(255,110,60,${0.55*(1-k)})`); ember.addColorStop(1,"rgba(255,60,40,0)");
       ctx.fillStyle = ember; ctx.beginPath(); ctx.arc(x,y,8*sc,0,6.283); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* ---------- Meteorit: alle 10 Minuten im Vollbild (reiner Design-Effekt) ----------
+     Erster Einschlag 20 s nach dem Öffnen des Vollbilds, mit ?meteor in der Adresse nach 2 s. */
+  const METEOR_EVERY = 10*60*1000;
+  let meteor = null, meteorNext = null;
+  const meteorTest = new URLSearchParams(location.search).has("meteor");
+  const gcircle = d3.geoCircle().precision(2);
+  function drawMeteor(t){
+    if(!document.body.classList.contains("gf") || reduced || t == null){ meteor = null; meteorNext = null; canvas.style.transform = ""; return; }
+    if(meteorNext === null) meteorNext = t + (meteorTest ? 2000 : 20000);
+    if(!meteor && t >= meteorNext){
+      const c = [-rot[0], -rot[1]];
+      const target = geoOffset(c[0], c[1], 12 + Math.random()*22, Math.random()*6.283);
+      const fromLeft = Math.random() < 0.5;
+      meteor = {target, t0:t, dur:1900, hitT:null, start:[fromLeft ? -size*0.08 : size*1.08, -size*0.1], sparks:[]};
+      meteorNext = t + METEOR_EVERY;
+    }
+    if(!meteor) return;
+    const m = meteor, sc = projection.scale()/300, R = projection.scale();
+    const vis = onFront(m.target);
+    const [tx, ty] = projection(m.target);
+    ctx.save();
+    if(m.hitT === null){
+      // Anflug: beschleunigt, mit Feuerschweif und Funken
+      const k = Math.min(1, (t - m.t0)/m.dur), e = k*k;
+      const hx = m.start[0] + (tx - m.start[0])*e, hy = m.start[1] + (ty - m.start[1])*e;
+      const ang = Math.atan2(ty - m.start[1], tx - m.start[0]);
+      const tail = (90 + 260*k)*sc;
+      const g = ctx.createLinearGradient(hx, hy, hx - Math.cos(ang)*tail, hy - Math.sin(ang)*tail);
+      g.addColorStop(0,"rgba(255,245,220,.95)"); g.addColorStop(0.15,"rgba(255,170,80,.75)"); g.addColorStop(0.55,"rgba(255,80,40,.3)"); g.addColorStop(1,"rgba(120,40,30,0)");
+      ctx.strokeStyle = g; ctx.lineCap = "round";
+      ctx.lineWidth = (10 + 8*k)*sc; ctx.beginPath(); ctx.moveTo(hx,hy); ctx.lineTo(hx - Math.cos(ang)*tail, hy - Math.sin(ang)*tail); ctx.stroke();
+      if(Math.random() < 0.8) m.sparks.push({x:hx, y:hy, vx:(Math.random()-0.5)*40 - Math.cos(ang)*60, vy:(Math.random()-0.5)*40 - Math.sin(ang)*60, t0:t});
+      const head = ctx.createRadialGradient(hx,hy,0,hx,hy,(16+10*k)*sc);
+      head.addColorStop(0,"rgba(255,255,245,1)"); head.addColorStop(0.35,"rgba(255,200,120,.9)"); head.addColorStop(1,"rgba(255,90,40,0)");
+      ctx.fillStyle = head; ctx.beginPath(); ctx.arc(hx,hy,(16+10*k)*sc,0,6.283); ctx.fill();
+      if(k >= 1){
+        m.hitT = t;
+        window.dispatchEvent(new CustomEvent("marktradar:flash"));
+      }
+    }
+    // Funken
+    for(let i = m.sparks.length-1; i >= 0; i--){
+      const p = m.sparks[i], a = (t - p.t0)/700;
+      if(a >= 1){ m.sparks.splice(i,1); continue; }
+      ctx.fillStyle = `rgba(255,${Math.round(200-120*a)},90,${1-a})`;
+      ctx.beginPath(); ctx.arc(p.x + p.vx*a, p.y + p.vy*a, (2.4*(1-a)+0.4)*sc, 0, 6.283); ctx.fill();
+    }
+    if(m.hitT !== null){
+      const dt = t - m.hitT;
+      // Wackeln direkt nach dem Einschlag
+      if(dt < 800){ const f = (1 - dt/800)*7; canvas.style.transform = `translate(${(Math.random()-0.5)*f}px,${(Math.random()-0.5)*f}px)`; }
+      else canvas.style.transform = "";
+      // Lichtblitz über der ganzen Erde
+      if(dt < 450){ ctx.beginPath(); path({type:"Sphere"}); ctx.fillStyle = `rgba(255,225,195,${0.5*(1-dt/450)})`; ctx.fill(); }
+      // Druckwelle: Kreis auf der Kugel, der sich bis zur anderen Seite der Erde ausbreitet
+      const WAVE = 14000;
+      for(const [lag, w, br] of [[0, 1, 1], [380, 0.55, 0.6]]){
+        const pk = (dt - lag)/WAVE;
+        if(pk <= 0 || pk >= 1) continue;
+        const rad = 179 * (1 - Math.pow(1 - pk, 1.12));
+        const ring = gcircle.center(m.target).radius(rad)();
+        const a = br * Math.pow(1 - pk, 0.6);
+        if(rad < 80){ ctx.beginPath(); path(ring); ctx.fillStyle = `rgba(255,120,60,${0.10*a})`; ctx.fill(); }
+        // Ring Punkt für Punkt, nur auf der sichtbaren Seite (sonst zeichnet der Rand mit)
+        const cs = ring.coordinates[0], front = cs.map(onFront), pts = cs.map(q => projection(q));
+        const front_ = new Path2D(), back_ = new Path2D();
+        for(let i=1;i<pts.length;i++){
+          const tgt = (front[i] && front[i-1]) ? front_ : (!front[i] && !front[i-1]) ? back_ : null;
+          if(!tgt) continue;
+          tgt.moveTo(pts[i-1][0], pts[i-1][1]); tgt.lineTo(pts[i][0], pts[i][1]);
+        }
+        ctx.lineCap = "round";
+        // hinter der Erde: schwach durchscheinend, damit man sieht, wie die Welle herumläuft
+        ctx.strokeStyle = `rgba(255,170,110,${0.5*a})`; ctx.lineWidth = (2.6*w)*sc; ctx.setLineDash([4*sc, 5*sc]); ctx.stroke(back_); ctx.setLineDash([]);
+        ctx.strokeStyle = `rgba(255,120,60,${0.35*a})`; ctx.lineWidth = (16*w)*sc; ctx.stroke(front_);
+        ctx.strokeStyle = `rgba(255,236,200,${0.9*a})`; ctx.lineWidth = (3.2*w)*sc; ctx.stroke(front_);
+      }
+      // Feuerball + glühender Krater
+      if(vis){
+        if(dt < 1800){
+          const k = dt/1800, r = (18 + 70*Math.sqrt(k))*sc;
+          const fb = ctx.createRadialGradient(tx,ty,0,tx,ty,r);
+          fb.addColorStop(0,`rgba(255,250,230,${1-k})`); fb.addColorStop(0.3,`rgba(255,170,80,${0.85*(1-k)})`); fb.addColorStop(1,"rgba(255,60,30,0)");
+          ctx.fillStyle = fb; ctx.beginPath(); ctx.arc(tx,ty,r,0,6.283); ctx.fill();
+        }
+        const ck = Math.max(0, 1 - dt/25000), cr = 14*sc;
+        const cg = ctx.createRadialGradient(tx,ty,0,tx,ty,cr);
+        cg.addColorStop(0,`rgba(255,150,70,${0.9*ck})`); cg.addColorStop(0.5,`rgba(200,50,30,${0.5*ck})`); cg.addColorStop(1,"rgba(80,20,10,0)");
+        ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(tx,ty,cr,0,6.283); ctx.fill();
+      }
+      if(dt > 26000) meteor = null;
     }
     ctx.restore();
   }
@@ -946,7 +1042,7 @@ function initGlobe(){
 
   function hit(px,py){
     const center = [-rot[0], -rot[1]];
-    let best = null, bd = 16;
+    let best = null, bd = 24;
     HOTSPOTS.filter(visible).forEach(h=>{
       if(d3.geoDistance([h.lon,h.lat], center) > Math.PI/2 - 0.04) return;
       const [x,y] = projection([h.lon,h.lat]);
@@ -956,7 +1052,7 @@ function initGlobe(){
     return best;
   }
 
-  d3.select(canvas).call(d3.drag()
+  d3.select(canvas).call(d3.drag().container(canvas)
     .on("start", e=>{ dragging = true; anim = null; downPos = [e.x,e.y]; canvas.classList.add("dragging"); })
     .on("drag", e=>{
       const k = 75 / projection.scale();
@@ -1570,8 +1666,15 @@ function frame(now){
     ctx.beginPath(); ctx.moveTo(g.x-len, wy+bend*0.4); ctx.quadraticCurveTo(g.x-len*0.5, wy-bend, g.x, wy); ctx.stroke();
   }
 
+  if(flashT0 !== null){
+    const fk = (now - flashT0)/1800;
+    if(fk >= 1) flashT0 = null;
+    else { ctx.fillStyle = `rgba(255,196,150,${0.5*Math.pow(1-fk,2)})`; ctx.fillRect(0,0,W,H); }
+  }
   if(!reduced && !document.hidden) requestAnimationFrame(frame);
 }
+let flashT0 = null;
+window.addEventListener("marktradar:flash", ()=>{ flashT0 = performance.now(); });
 function start(){ last = performance.now(); requestAnimationFrame(frame); }
 resize();
 addEventListener("resize", ()=>{ resize(); if(reduced) frame(performance.now()); });
