@@ -254,6 +254,10 @@ body.gf .voice>*{pointer-events:auto}
 .v-cap .q{display:block;font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-bottom:4px}
 .v-type{display:flex;gap:8px;width:100%}
 .v-type[hidden]{display:none}
+.v-hint{order:3;font-family:var(--font-mono);font-size:11.5px;color:var(--muted);text-shadow:0 1px 6px rgba(0,0,0,.8)}
+.v-mic{order:2}
+.v-mic[data-on="1"]{border-width:2px;animation:micOn 2.4s ease-in-out infinite}
+@keyframes micOn{50%{box-shadow:0 0 40px 0 var(--v-c)}}
 body.gf .detail{transition:opacity .4s ease}
 body.gf.vtalk .detail{opacity:0;pointer-events:none}
 .v-type input{flex:1;min-width:0;font:15px var(--font-body);color:var(--fg);background:rgba(12,18,32,.8);border:1px solid var(--line);border-radius:999px;padding:9px 14px}
@@ -372,8 +376,9 @@ body.gf.vtalk .detail{opacity:0;pointer-events:none}
       <div class="ov bl">Ziehen zum Drehen · Punkt antippen</div>
       <div class="voice" id="voice">
         <p class="v-cap" id="vCap" aria-live="polite"></p>
-        <form class="v-type" id="vType" hidden><input id="vInput" type="text" placeholder="Frag das System …" autocomplete="off"><button type="submit">Senden</button></form>
-        <button type="button" class="v-mic" id="vMic" aria-label="Mit dem System sprechen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+        <form class="v-type" id="vType" hidden><input id="vInput" type="text" placeholder="Frag Jarvis …" autocomplete="off"><button type="submit">Senden</button></form>
+        <span class="v-hint" id="vHint">Jarvis · tippen zum Sprechen</span>
+        <button type="button" class="v-mic" id="vMic" aria-label="Mit Jarvis sprechen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
       </div>
       <div class="ov war" id="warNote">Raketen &amp; Einschläge: Kampfhandlungen laut aktuellen Meldungen · symbolisch</div>
       <p class="nomap" id="nomap" hidden>Kartendaten konnten nicht geladen werden. Die Punkte und die Liste funktionieren trotzdem.</p>
@@ -1871,14 +1876,14 @@ function setState(s){
 }
 function say(text){
   cap.innerHTML = (lastQ ? `<span class="q">„${esc(lastQ)}“</span>` : "") + esc(text);
-  if(!window.speechSynthesis){ setState("idle"); return; }
+  if(!window.speechSynthesis){ setState("idle"); window.dispatchEvent(new Event("jarvis:spoken")); return; }
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = "de-DE"; if(voice) u.voice = voice;
   u.rate = 0.98; u.pitch = 0.78;
   u.onstart = () => setState("speak");
   u.onboundary = () => { pulse = 1; };
-  u.onend = u.onerror = () => setState("idle");
+  u.onend = u.onerror = () => { setState("idle"); window.dispatchEvent(new Event("jarvis:spoken")); };
   setState("speak");
   speechSynthesis.speak(u);
 }
@@ -1902,11 +1907,12 @@ const ASSETS = [
 const englishy = t => /\b(the|to|of|and|is|as|in|for|on|with)\b/i.test(t) && !/[äöüß]/i.test(t);
 
 function answer(qRaw){
-  const q = qRaw.toLowerCase();
+  const q = qRaw.toLowerCase().replace(/^\s*(hey |ok |okay )?jarvis[,!.]?\s*/, "");
+  if(!q.trim()) return "Ja? Ich höre.";
   const R = window.__radar, lage = window.__lageRes;
   if(/meteor|asteroid|komet/.test(q)){ window.dispatchEvent(new CustomEvent("marktradar:meteor")); return "Einschlag wird eingeleitet. Festhalten."; }
   if(/^(hallo|hi|hey|servus|moin)|wer bist du|was kannst du/.test(q))
-    return "Ich bin das Schurkensystem. Frag mich nach der Lage, nach einem Kurs wie Bitcoin oder Gold, nach einer Region oder danach, wo gerade Krieg ist.";
+    return "Ich bin Jarvis. Frag mich nach der Lage, nach einem Kurs wie Bitcoin oder Gold, nach einer Region oder danach, wo gerade Krieg ist.";
   if(/danke/.test(q)) return "Jederzeit.";
   if(/krieg|kämpf|kampf|angriff|rakete/.test(q)){
     const z = (window.__warZones && window.__warZones()) || [];
@@ -1958,17 +1964,24 @@ function answer(qRaw){
   return "Das kann ich leider nicht beantworten. Frag mich nach der Lage, einem Kurs, einer Region oder danach, wo Krieg ist.";
 }
 
-/* ----- Zuhören ----- */
+/* ----- Zuhören: ein Tipp startet das Gespräch, Jarvis hört danach automatisch weiter ----- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null, lastQ = "";
+let rec = null, lastQ = "", convo = false, misses = 0;
+const hint = document.getElementById("vHint");
+function setConvo(on){
+  convo = on; mic.dataset.on = on ? "1" : "0";
+  hint.textContent = on ? "Jarvis hört zu · tippen zum Beenden" : "Jarvis · tippen zum Sprechen";
+  if(!on){ if(rec) try{ rec.abort(); }catch(_){} if(state === "listen") setState("idle"); }
+}
 function ask(text){
-  lastQ = text.trim(); if(!lastQ) { setState("idle"); return; }
+  lastQ = text.trim(); if(!lastQ){ setState("idle"); return; }
+  if(/^(jarvis[, ]*)?(stopp?|stop|tschüss|ende|aus|danke das wars|das wars)\b/i.test(lastQ)){
+    setConvo(false); say("Alles klar. Bis später."); return;
+  }
   say(answer(lastQ));
 }
-function listen(){
-  if(window.speechSynthesis){ speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance("")); } // iPad: Ton freischalten
-  if(!SR){ form.hidden = false; input.focus(); cap.textContent = "Spracheingabe geht in diesem Browser nicht. Tipp deine Frage ein."; return; }
-  if(state === "listen" && rec){ rec.stop(); return; }
+function startRec(){
+  if(!convo || !SR) return;
   rec = new SR(); rec.lang = "de-DE"; rec.interimResults = true; rec.maxAlternatives = 1;
   let finalText = "";
   rec.onstart = () => { setState("listen"); cap.innerHTML = '<span class="q">Ich höre …</span>'; };
@@ -1976,14 +1989,34 @@ function listen(){
     let t = ""; for(const r of e.results){ t += r[0].transcript; if(r.isFinal) finalText = t; }
     cap.innerHTML = `<span class="q">„${esc(t)}“</span>`;
   };
-  rec.onerror = e => { setState("idle"); if(e.error === "not-allowed" || e.error === "service-not-allowed"){ form.hidden = false; cap.textContent = "Kein Zugriff aufs Mikrofon. Erlaube es in den Einstellungen oder tipp deine Frage ein."; } };
-  rec.onend = () => { if(finalText) ask(finalText); else if(state === "listen") setState("idle"); };
-  try{ rec.start(); }catch(e){ form.hidden = false; }
+  rec.onerror = e => {
+    if(e.error === "not-allowed" || e.error === "service-not-allowed"){
+      setConvo(false); form.hidden = false;
+      cap.textContent = "Kein Zugriff aufs Mikrofon. Erlaube es in den Einstellungen oder tipp deine Frage ein.";
+    }
+  };
+  rec.onend = () => {
+    if(finalText){ misses = 0; ask(finalText); return; }
+    if(!convo) return;
+    misses++;
+    if(misses > 40){ setConvo(false); cap.textContent = "Jarvis macht Pause. Tipp aufs Mikro, um weiterzureden."; return; }
+    setTimeout(startRec, 250);                       // Stille: einfach weiter zuhören
+  };
+  try{ rec.start(); }
+  catch(e){ setConvo(false); hint.textContent = "Tipp aufs Mikro, um weiterzureden"; }
 }
-mic.addEventListener("click", listen);
+function micTap(){
+  if(window.speechSynthesis){ speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance("")); } // iPad: Ton freischalten
+  if(convo){ setConvo(false); return; }
+  if(!SR){ form.hidden = false; input.focus(); cap.textContent = "Spracheingabe geht in diesem Browser nicht. Tipp deine Frage ein."; return; }
+  misses = 0; setConvo(true); startRec();
+}
+// nach jeder Antwort automatisch wieder zuhören
+window.addEventListener("jarvis:spoken", () => { if(convo) setTimeout(startRec, 350); });
+mic.addEventListener("click", micTap);
 mic.addEventListener("contextmenu", e => { e.preventDefault(); form.hidden = !form.hidden; if(!form.hidden) input.focus(); });
 form.addEventListener("submit", e => { e.preventDefault(); const t = input.value; input.value = ""; ask(t); });
-window.addEventListener("marktradar:fullscreen", e => { if(!e.detail.on){ if(window.speechSynthesis) speechSynthesis.cancel(); if(rec) try{ rec.abort(); }catch(_){} setState("idle"); cap.textContent = ""; document.body.classList.remove("vtalk"); form.hidden = true; } });
+window.addEventListener("marktradar:fullscreen", e => { if(!e.detail.on){ if(window.speechSynthesis) speechSynthesis.cancel(); setConvo(false); setState("idle"); cap.textContent = ""; document.body.classList.remove("vtalk"); form.hidden = true; } });
 window.__ask = ask; window.__voiceState = setState;
 })();
 </script>
