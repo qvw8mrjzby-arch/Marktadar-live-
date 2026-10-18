@@ -190,9 +190,33 @@ canvas.dragging{cursor:grabbing}
 .a-chip.armed{color:var(--calm);border-color:color-mix(in srgb,var(--calm) 45%,transparent)}
 .kal-box{height:min(560px,75vh);min-height:420px;padding:6px}
 .tv-note{font-size:12px;color:var(--muted);margin:0 4px}
+
+/* ---------- Lage-Hintergrund (Warp wie TradingView, gesteuert von der Marktlage) ---------- */
+#lageBg{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;pointer-events:none;display:block}
+.wrap{position:relative;z-index:1}
+:root{--panel:rgba(19,27,44,.86);--panel-2:rgba(24,34,55,.9)}
+.stage{background:radial-gradient(ellipse at 50% 45%,rgba(22,34,58,.9) 0%,rgba(12,18,32,.82) 70%)}
+.lage{display:inline-flex;align-items:center;gap:10px;font:600 13px var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:var(--fg);background:rgba(12,18,32,.6);border:1px solid var(--lage-c,var(--line));border-radius:999px;padding:6px 14px 6px 10px;cursor:pointer;transition:border-color 1.2s ease,box-shadow 1.2s ease}
+.lage:hover{background:rgba(24,34,55,.8)}
+.lage .lage-dot{width:10px;height:10px;border-radius:50%;background:var(--lage-c,var(--muted));box-shadow:0 0 10px var(--lage-c,transparent);transition:background 1.2s ease}
+.lage .lage-num{font-family:var(--font-mono);font-weight:500;letter-spacing:0;color:var(--muted)}
+.lage[data-hot="1"]{box-shadow:0 0 18px -4px var(--lage-c)}
+.lage[data-hot="1"] .lage-dot{animation:blink 1.4s ease-in-out infinite}
+.lage-panel[hidden]{display:none!important}
+.lage-panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.lage-panel h3{margin:0;font:600 12px var(--font-body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.lage-rows{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.lage-rows li{display:flex;flex-direction:column;gap:4px;min-width:0}
+.lr-top{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
+.lr-top b{font-family:var(--font-mono);font-weight:500}
+.lr-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.lr-bar i{display:block;height:100%;border-radius:3px}
+.lr-txt{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.lage-scale{font-size:12px;color:var(--muted);margin:0}
 </style>
 </head>
 <body style="margin:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)">
+<canvas id="lageBg" aria-hidden="true"></canvas>
 
 <div class="wrap">
   <header class="head">
@@ -201,11 +225,18 @@ canvas.dragging{cursor:grabbing}
       <p class="stand">Kurse live · Weltkugel &amp; News: Stand 12.10.2026</p>
     </div>
     <div class="legend" aria-label="Legende">
+      <button type="button" class="lage" id="lageBtn" aria-expanded="false" aria-controls="lagePanel"><span class="lage-dot"></span><span id="lageLbl">Lage lädt …</span><span class="lage-num" id="lageNum"></span></button>
       <span class="lg"><span class="dot kritisch"></span>Kritisch</span>
       <span class="lg"><span class="dot beobachten"></span>Beobachten</span>
       <span class="lg"><span class="dot ruhig"></span>Ruhig</span>
     </div>
   </header>
+
+  <section class="lage-panel" id="lagePanel" hidden aria-label="So entsteht die Marktlage">
+    <h3>So entsteht die Lage</h3>
+    <ul class="lage-rows" id="lageRows"></ul>
+    <p class="lage-scale">0–30 ruhig · 30–50 normal · 50–70 angespannt · ab 70 Alarm. Je höher der Wert, desto röter und schneller wird der Hintergrund. Das ist eine Stimmungsanzeige, kein Kauf- oder Verkaufssignal.</p>
+  </section>
 
   <section class="tape" aria-label="Laufendes Kursband">
     <div class="tradingview-widget-container">
@@ -1121,6 +1152,215 @@ async function load(){
   }
   $("#moodStamp").textContent = "kommt mit dem nächsten Lauf";
   $("#alarmList").innerHTML = `<li class="empty">Die Daten erscheinen nach dem nächsten automatischen Lauf.</li>`;
+}
+load(); setInterval(load, 10*60*1000);
+})();
+</script>
+<script>
+/* ---------- Lage-Hintergrund ----------
+   Lage-Wert 0–100 aus: Aktien-Stimmung (CNN Fear & Greed), Krypto-Stimmung, Kursbewegung (Indizes runter / Öl hoch)
+   und Anteil roter Meldungen der letzten 24 Std. Steuert Farbe, Tempo und Strudel des Hintergrunds.
+   Testen: ?lage=90 an die Adresse hängen. */
+(function(){
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const REPO = "https://raw.githubusercontent.com/qvw8mrjzby-arch/Marktadar-live-/main/";
+const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const params = new URLSearchParams(location.search);
+const forced = params.has("lage") ? clamp(parseFloat(params.get("lage"))||0, 0, 100) : null;
+
+/* Farbverlauf der Lage: blau/lila (ruhig) → orange → rot */
+const STOPS = [[0,[80,110,210]],[35,[124,92,235]],[55,[240,150,50]],[72,[255,80,60]],[100,[210,20,40]]];
+function lageRGB(v){
+  for(let i=1;i<STOPS.length;i++){
+    const [b,cb] = STOPS[i], [a,ca] = STOPS[i-1];
+    if(v<=b){ const t=(v-a)/(b-a); return ca.map((c,k)=>Math.round(c+(cb[k]-c)*t)); }
+  }
+  return STOPS[STOPS.length-1][1];
+}
+const rgba = (c,a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+function lageName(v){ return v<30?"Ruhig":v<50?"Normal":v<70?"Angespannt":"Alarm"; }
+const pct = v => (v>0?"+":"") + v.toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1}) + " %";
+
+/* ---------- Lage berechnen ---------- */
+function compute(m, n){
+  const parts = [];
+  const fs = m && m.fng && m.fng.stocks, fc = m && m.fng && m.fng.crypto;
+  if(fs) parts.push({k:"Aktien-Stimmung", w:.35, v:100-fs.value, txt:`Fear & Greed ${fs.value} · ${fs.label}`});
+  if(fc) parts.push({k:"Krypto-Stimmung", w:.15, v:100-fc.value, txt:`Fear & Greed ${fc.value} · ${fc.label}`});
+  const P = (m && m.prices) || {};
+  const idx = ["SP500","NASDAQ","DAX","BTC"].filter(s=>P[s] && P[s].chg!=null);
+  if(idx.length || (P.BRENT && P.BRENT.chg!=null)){
+    const down = idx.length ? idx.reduce((t,s)=>t + clamp(-P[s].chg/3,0,1), 0)/idx.length : 0;
+    const oil = P.BRENT ? clamp(P.BRENT.chg/5,0,1) : 0;
+    const names = {SP500:"S&P",NASDAQ:"Nasdaq",DAX:"DAX",BTC:"BTC"};
+    const worst = idx.slice().sort((a,b)=>P[a].chg-P[b].chg)[0];
+    const bits = [];
+    if(worst) bits.push(`${names[worst]} ${pct(P[worst].chg)}`);
+    if(P.BRENT) bits.push(`Brent ${pct(P.BRENT.chg)}`);
+    parts.push({k:"Kursbewegung", w:.25, v:100*(.65*down+.35*oil), txt:bits.join(" · ")});
+  }
+  if(n && Array.isArray(n.items) && n.items.length){
+    const day = Date.now() - 24*3600e3;
+    let its = n.items.filter(i => i.p && new Date(i.p).getTime() > day);
+    if(its.length < 10) its = n.items;
+    const crit = its.filter(i=>i.sev==="kritisch").length, watch = its.filter(i=>i.sev==="beobachten").length;
+    const share = (crit + watch*.4)/its.length;
+    parts.push({k:"Nachrichtenlage", w:.25, v:clamp(share/.3,0,1)*100, txt:`${crit} rote, ${watch} gelbe von ${its.length} Meldungen`});
+  }
+  if(!parts.length) return null;
+  const wsum = parts.reduce((t,p)=>t+p.w,0);
+  const score = parts.reduce((t,p)=>t+p.v*p.w,0)/wsum;
+  return {score:clamp(Math.round(score),0,100), parts};
+}
+
+async function getJSON(name){
+  for(const u of [REPO+name+"?t="+Math.floor(Date.now()/60000), name]){
+    try{ const r = await fetch(u,{cache:"no-store"}); if(r.ok) return await r.json(); }catch(e){}
+  }
+  return null;
+}
+
+/* ---------- Anzeige im Kopf ---------- */
+const btn = $("#lageBtn"), panel = $("#lagePanel");
+btn.addEventListener("click", ()=>{
+  const open = panel.hidden; panel.hidden = !open; btn.setAttribute("aria-expanded", open?"true":"false");
+});
+function renderChip(res){
+  const v = res.score, c = lageRGB(v);
+  btn.style.setProperty("--lage-c", rgba(c,1));
+  btn.dataset.hot = v>=70 ? "1" : "0";
+  $("#lageLbl").textContent = "Lage: " + lageName(v);
+  $("#lageNum").textContent = v + "/100" + (forced!=null ? " · Test" : "");
+  $("#lageRows").innerHTML = res.parts.map(p=>{
+    const pc = lageRGB(p.v);
+    return `<li><span class="lr-top"><span>${esc(p.k)}</span><b>${Math.round(p.v)}</b></span>
+      <span class="lr-bar"><i style="width:${clamp(p.v,2,100)}%;background:${rgba(pc,1)}"></i></span>
+      <span class="lr-txt">${esc(p.txt)}</span></li>`;
+  }).join("");
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute("content", v>=70 ? "#1a0b10" : "#0c1220");
+}
+
+/* ---------- Hintergrund-Animation ---------- */
+const cv = $("#lageBg"), ctx = cv.getContext("2d");
+let W=0, H=0, dpr=1, target=35, cur=35, t0=performance.now(), last=t0, spin=0;
+const STARS = [];
+function resize(){
+  dpr = Math.min(window.devicePixelRatio||1, 1.5);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+  const want = Math.round(clamp(W*H/5200, 120, 320));
+  while(STARS.length < want) STARS.push(newStar(true));
+  STARS.length = want;
+}
+function newStar(anyZ){
+  return {x:(Math.random()*2-1), y:(Math.random()*2-1), z: anyZ ? Math.random()*0.95+0.05 : 1, pz:null, tint:Math.random()};
+}
+function center(){ return [W/2, Math.min(H*0.26, 260)]; }
+
+function frame(now){
+  const dt = Math.min(50, now-last)/1000; last = now;
+  cur += (target-cur) * Math.min(1, dt*0.6);           // weich hochfahren
+  const L = cur/100;
+  const col = lageRGB(cur);
+  const [cx,cy] = center();
+  const R = Math.hypot(Math.max(cx,W-cx), Math.max(cy,H-cy));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  // Grund
+  ctx.fillStyle = "#0c1220"; ctx.fillRect(0,0,W,H);
+
+  // Nebel / Strudel – wird mit der Lage größer, dichter und dreht schneller
+  spin += dt * (0.04 + L*L*0.9);
+  const arms = 3, neb = 0.05 + L*0.42;
+  ctx.globalCompositeOperation = "lighter";
+  for(let i=0;i<arms;i++){
+    const a = spin + i*Math.PI*2/arms;
+    const off = R*(0.10 + 0.10*L);
+    const x = cx + Math.cos(a)*off, y = cy + Math.sin(a)*off*0.55;
+    const g = ctx.createRadialGradient(x,y,0,x,y,R*(0.35+0.25*L));
+    g.addColorStop(0, rgba(col, neb*0.9));
+    g.addColorStop(0.5, rgba(col, neb*0.35));
+    g.addColorStop(1, rgba(col, 0));
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  }
+  // Spiralarme ab "angespannt"
+  if(L > 0.45){
+    const k = (L-0.45)/0.55;
+    ctx.lineCap = "round";
+    for(let i=0;i<arms*2;i++){
+      ctx.beginPath();
+      for(let s=0;s<=40;s++){
+        const r = 30 + s*R*0.018;
+        const a = -spin*1.6 + i*Math.PI/arms + s*0.17;
+        const x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r*0.6;
+        s ? ctx.lineTo(x,y) : ctx.moveTo(x,y);
+      }
+      ctx.strokeStyle = rgba(col, 0.06*k); ctx.lineWidth = 22 + 30*k; ctx.stroke();
+    }
+  }
+  ctx.globalCompositeOperation = "source-over";
+  // dunkles Auge in der Mitte
+  const eye = ctx.createRadialGradient(cx,cy,0,cx,cy,R*(0.06+0.08*L));
+  eye.addColorStop(0, `rgba(6,8,14,${0.5+0.4*L})`); eye.addColorStop(1, "rgba(6,8,14,0)");
+  ctx.fillStyle = eye; ctx.fillRect(0,0,W,H);
+
+  // Sterne -> Warp-Streifen
+  const speed = 0.02 + Math.pow(L,2.2)*1.6;            // ruhig: fast stehend, Alarm: Warp
+  const fov = Math.min(W,H)*0.9;
+  for(const st of STARS){
+    st.pz = st.z;
+    st.z -= speed*dt*(0.6+st.tint*0.6);
+    if(st.z <= 0.02){ Object.assign(st, newStar(false)); st.pz = st.z; continue; }
+    const sx = cx + st.x/st.z*fov, sy = cy + st.y/st.z*fov*0.8;
+    const px = cx + st.x/st.pz*fov, py = cy + st.y/st.pz*fov*0.8;
+    if(sx<-50||sx>W+50||sy<-50||sy>H+50){ Object.assign(st, newStar(false)); continue; }
+    const near = 1-st.z;
+    const a = clamp(near*1.2, 0.08, 0.95);
+    const c = st.tint > 0.55 - L*0.4 ? [235,238,255] : col;
+    const len = 1 + speed*6;
+    ctx.strokeStyle = rgba(c, a);
+    ctx.lineWidth = 0.6 + near*1.6;
+    ctx.beginPath();
+    ctx.moveTo(px - (sx-px)*len, py - (sy-py)*len);
+    ctx.lineTo(sx, sy);
+    ctx.stroke();
+    if(speed < 0.15){ ctx.fillStyle = rgba(c,a); ctx.fillRect(sx-0.7,sy-0.7,1.4,1.4); }
+  }
+
+  // Rand-Glühen bei Alarm
+  if(L > 0.7){
+    const k = (L-0.7)/0.3, pulse = 0.75 + 0.25*Math.sin(now/600);
+    const v = ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.35,W/2,H/2,Math.hypot(W,H)*0.6);
+    v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, rgba([200,20,40], 0.28*k*pulse));
+    ctx.fillStyle = v; ctx.fillRect(0,0,W,H);
+  }
+  if(!reduced && !document.hidden) requestAnimationFrame(frame);
+}
+function start(){ last = performance.now(); requestAnimationFrame(frame); }
+resize();
+addEventListener("resize", ()=>{ resize(); if(reduced) frame(performance.now()); });
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && !reduced) start(); });
+start();
+
+function setLage(res){
+  target = res.score;
+  if(reduced){ cur = target; frame(performance.now()); }
+  renderChip(res);
+}
+
+async function load(){
+  if(forced!=null){
+    setLage({score:Math.round(forced), parts:[{k:"Testmodus", w:1, v:forced, txt:"über ?lage= in der Adresse gesetzt"}]});
+    return;
+  }
+  const [m, n] = await Promise.all([getJSON("market.json"), getJSON("news.json")]);
+  const res = compute(m, n);
+  if(res) setLage(res);
+  else { $("#lageLbl").textContent = "Lage: keine Daten"; }
 }
 load(); setInterval(load, 10*60*1000);
 })();
