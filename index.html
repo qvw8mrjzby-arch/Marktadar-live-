@@ -859,9 +859,13 @@ function initGlobe(){
   let meteor = null, meteorNext = null;
   const meteorTest = new URLSearchParams(location.search).has("meteor");
   const gcircle = d3.geoCircle().precision(2);
+  window.addEventListener("marktradar:fullscreen", e=>{
+    meteor = null; canvas.style.transform = "";
+    meteorNext = e.detail.on ? performance.now() + (meteorTest ? 2000 : 20000) : null;
+  });
   function drawMeteor(t){
-    if(!document.body.classList.contains("gf") || reduced || t == null){ meteor = null; meteorNext = null; canvas.style.transform = ""; return; }
-    if(meteorNext === null) meteorNext = t + (meteorTest ? 2000 : 20000);
+    if(!document.body.classList.contains("gf") || reduced || t == null){ meteor = null; canvas.style.transform = ""; return; }
+    if(meteorNext === null) return;
     if(!meteor && t >= meteorNext){
       const c = [-rot[0], -rot[1]];
       const target = geoOffset(c[0], c[1], 12 + Math.random()*22, Math.random()*6.283);
@@ -1734,6 +1738,7 @@ load(); setInterval(load, 10*60*1000);
     path.setAttribute("d", on ? CLOSE : OPEN);
     if(!on) window.scrollTo(0, scrollY);
     window.dispatchEvent(new Event("resize"));
+    window.dispatchEvent(new CustomEvent("marktradar:fullscreen", {detail:{on}}));
   }
   btn.addEventListener("click", ()=> set(!document.body.classList.contains("gf")));
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && document.body.classList.contains("gf")) set(false); });
