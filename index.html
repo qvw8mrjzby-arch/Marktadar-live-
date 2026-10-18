@@ -1783,6 +1783,7 @@ load(); setInterval(load, 10*60*1000);
   document.addEventListener("keydown", e=>{ if(e.key==="Escape" && document.body.classList.contains("gf")) set(false); });
 })();
 </script>
+<script src="jarvis.js?v=1"></script>
 <script>
 /* ---------- Stimme: Portal + Sprachsteuerung (läuft komplett im Browser, ohne Konto) ---------- */
 (function(){
@@ -1880,7 +1881,7 @@ function say(text){
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = "de-DE"; if(voice) u.voice = voice;
-  u.rate = 0.98; u.pitch = 0.78;
+  u.rate = (window.Jarvis && Jarvis.rate) || 0.98; u.pitch = 0.78;
   u.onstart = () => setState("speak");
   u.onboundary = () => { pulse = 1; };
   u.onend = u.onerror = () => { setState("idle"); window.dispatchEvent(new Event("jarvis:spoken")); };
@@ -1978,7 +1979,7 @@ function ask(text){
   if(/^(jarvis[, ]*)?(stopp?|stop|tschüss|ende|aus|danke das wars|das wars)\b/i.test(lastQ)){
     setConvo(false); say("Alles klar. Bis später."); return;
   }
-  say(answer(lastQ));
+  say(window.Jarvis ? Jarvis.reply(lastQ) : answer(lastQ));
 }
 function startRec(){
   if(!convo || !SR) return;
@@ -2009,7 +2010,8 @@ function micTap(){
   if(window.speechSynthesis){ speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance("")); } // iPad: Ton freischalten
   if(convo){ setConvo(false); return; }
   if(!SR){ form.hidden = false; input.focus(); cap.textContent = "Spracheingabe geht in diesem Browser nicht. Tipp deine Frage ein."; return; }
-  misses = 0; setConvo(true); startRec();
+  misses = 0; setConvo(true);
+  lastQ = ""; say(window.Jarvis ? Jarvis.greeting() : "Was möchten Sie wissen?");   // Begrüßung, danach hört Jarvis automatisch zu
 }
 // nach jeder Antwort automatisch wieder zuhören
 window.addEventListener("jarvis:spoken", () => { if(convo) setTimeout(startRec, 350); });
