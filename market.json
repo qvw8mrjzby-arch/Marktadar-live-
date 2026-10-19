@@ -1,29 +1,29 @@
 {
- "updated": "2026-10-19T21:03:14Z",
+ "updated": "2026-10-19T23:57:54Z",
  "prices": {
   "BTC": {
-   "price": 81985,
-   "chg": 1.2834527133906186
+   "price": 81899,
+   "chg": -0.1105417218543719
   },
   "ETH": {
-   "price": 2400.48,
-   "chg": 2.012849386157137
+   "price": 2405.49,
+   "chg": -0.12884522622395164
   },
   "SOL": {
-   "price": 104.55,
-   "chg": 3.16850653118233
+   "price": 104.97,
+   "chg": 0.8676273173941667
   },
   "XRP": {
    "price": 1.3,
-   "chg": 2.696253938790123
+   "chg": -0.15887838890104533
   },
   "GOLD": {
-   "price": 4157.9,
-   "chg": 1.2171669222717174
+   "price": 4153.2,
+   "chg": 1.1027532315781796
   },
   "BRENT": {
-   "price": 109.36,
-   "chg": 3.1114463511219936
+   "price": 109.25,
+   "chg": 3.0077314727512627
   },
   "SP500": {
    "price": 7690.73,
@@ -38,8 +38,8 @@
    "chg": 0.16651053419458606
   },
   "EURUSD": {
-   "price": 1.1216,
-   "chg": 0.5017921146953208
+   "price": 1.1217,
+   "chg": 0.11602998928952335
   },
   "US10Y": {
    "price": 5.136,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 81985,
+   "price": 81899,
    "unit": "$",
    "triggered": false
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 81985,
+   "price": 81899,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2400.48,
+   "price": 2405.49,
    "unit": "$",
    "triggered": false
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 109.36,
+   "price": 109.25,
    "unit": "$",
    "triggered": false
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 109.36,
+   "price": 109.25,
    "unit": "$",
    "triggered": false
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 4157.9,
+   "price": 4153.2,
    "unit": "$",
    "triggered": false
   },
