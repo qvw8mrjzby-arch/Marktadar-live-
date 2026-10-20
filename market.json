@@ -1,29 +1,29 @@
 {
- "updated": "2026-10-20T05:22:18Z",
+ "updated": "2026-10-20T06:00:31Z",
  "prices": {
   "BTC": {
-   "price": 81916,
-   "chg": -0.7782461522776998
+   "price": 81715,
+   "chg": -1.1388223015599486
   },
   "ETH": {
-   "price": 2405.65,
-   "chg": -0.7158667433445967
+   "price": 2396.89,
+   "chg": -1.290671041291966
   },
   "SOL": {
-   "price": 104.89,
-   "chg": -0.4535268864310772
+   "price": 104.5,
+   "chg": -1.0150855264925702
   },
   "XRP": {
    "price": 1.3,
-   "chg": -0.551830108993528
+   "chg": -0.7946078392695486
   },
   "GOLD": {
-   "price": 4158.0,
-   "chg": -0.2901609074122957
+   "price": 4144.2,
+   "chg": -0.6210882233040116
   },
   "BRENT": {
-   "price": 110.0,
-   "chg": 3.8519637462235634
+   "price": 110.22,
+   "chg": 4.0596676737160164
   },
   "SP500": {
    "price": 7690.73,
@@ -38,8 +38,8 @@
    "chg": 0.16651053419458606
   },
   "EURUSD": {
-   "price": 1.1238,
-   "chg": 0.3034630489110901
+   "price": 1.1231,
+   "chg": 0.24098536237058266
   },
   "US10Y": {
    "price": 5.136,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 81916,
+   "price": 81715,
    "unit": "$",
    "triggered": false
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 81916,
+   "price": 81715,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2405.65,
+   "price": 2396.89,
    "unit": "$",
    "triggered": false
   },
@@ -156,16 +156,16 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 110.0,
+   "price": 110.22,
    "unit": "$",
-   "triggered": false
+   "triggered": true
   },
   {
    "symbol": "BRENT",
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 110.0,
+   "price": 110.22,
    "unit": "$",
    "triggered": false
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 4158.0,
+   "price": 4144.2,
    "unit": "$",
    "triggered": false
   },
