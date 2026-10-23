@@ -1,29 +1,29 @@
 {
- "updated": "2026-10-23T01:02:24Z",
+ "updated": "2026-10-23T01:31:44Z",
  "prices": {
   "BTC": {
-   "price": 81373,
-   "chg": -3.230200538190834
+   "price": 81393,
+   "chg": -3.3880157151785975
   },
   "ETH": {
-   "price": 2392.17,
-   "chg": -3.127098625047786
+   "price": 2388.81,
+   "chg": -3.5439626601514598
   },
   "SOL": {
-   "price": 103.94,
-   "chg": -2.9277935891937323
+   "price": 103.89,
+   "chg": -3.113840797273747
   },
   "XRP": {
    "price": 1.31,
-   "chg": -3.703948936096663
+   "chg": -3.896909109809253
   },
   "GOLD": {
-   "price": 4042.8,
-   "chg": -2.819643758563495
+   "price": 4034.3,
+   "chg": -3.023965770053605
   },
   "BRENT": {
-   "price": 112.87,
-   "chg": 3.030579643998177
+   "price": 113.64,
+   "chg": 3.7334550433592018
   },
   "SP500": {
    "price": 7663.43,
@@ -38,8 +38,8 @@
    "chg": -0.04282457839260845
   },
   "EURUSD": {
-   "price": 1.1222,
-   "chg": -0.026726057906456546
+   "price": 1.1225,
+   "chg": 0.0
   },
   "US10Y": {
    "price": 4.953,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 81373,
+   "price": 81393,
    "unit": "$",
    "triggered": false
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 81373,
+   "price": 81393,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2392.17,
+   "price": 2388.81,
    "unit": "$",
    "triggered": false
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 112.87,
+   "price": 113.64,
    "unit": "$",
    "triggered": true
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 112.87,
+   "price": 113.64,
    "unit": "$",
    "triggered": false
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 4042.8,
+   "price": 4034.3,
    "unit": "$",
    "triggered": false
   },
