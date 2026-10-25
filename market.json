@@ -1,29 +1,29 @@
 {
- "updated": "2026-10-25T21:15:48Z",
+ "updated": "2026-10-25T22:33:29Z",
  "prices": {
   "BTC": {
-   "price": 80390,
-   "chg": 0.16392549924459154
+   "price": 80455,
+   "chg": 0.0184319966451061
   },
   "ETH": {
-   "price": 2341.75,
-   "chg": 0.3531700928637076
+   "price": 2343.73,
+   "chg": 0.10852681941877186
   },
   "SOL": {
-   "price": 101.46,
-   "chg": 0.3709758649319965
+   "price": 101.65,
+   "chg": 0.1631570948065904
   },
   "XRP": {
    "price": 1.3,
-   "chg": 0.6875797159612732
+   "chg": 0.6446867022698954
   },
   "GOLD": {
-   "price": 4007.9,
-   "chg": -3.251581132622028
+   "price": 4008.3,
+   "chg": -3.241925360884468
   },
   "BRENT": {
-   "price": 111.7,
-   "chg": 2.6748782057174347
+   "price": 110.81,
+   "chg": 1.856788307748869
   },
   "SP500": {
    "price": 7623.68,
@@ -38,8 +38,8 @@
    "chg": -1.7209800250638008
   },
   "EURUSD": {
-   "price": 1.1225,
-   "chg": 0.0
+   "price": 1.1213,
+   "chg": -0.10690423162584839
   },
   "US10Y": {
    "price": 4.988,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 80390,
+   "price": 80455,
    "unit": "$",
    "triggered": false
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 80390,
+   "price": 80455,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2341.75,
+   "price": 2343.73,
    "unit": "$",
    "triggered": false
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 111.7,
+   "price": 110.81,
    "unit": "$",
    "triggered": true
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 111.7,
+   "price": 110.81,
    "unit": "$",
    "triggered": false
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 4007.9,
+   "price": 4008.3,
    "unit": "$",
    "triggered": false
   },
