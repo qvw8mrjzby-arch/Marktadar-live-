@@ -1,25 +1,25 @@
 {
- "updated": "2026-10-26T08:08:44Z",
+ "updated": "2026-10-26T13:07:45Z",
  "prices": {
   "BTC": {
-   "price": 79760,
-   "chg": -0.976977908926012
+   "price": 80100,
+   "chg": -0.30031624779772315
   },
   "ETH": {
-   "price": 2306.81,
-   "chg": -1.4995460063517996
+   "price": 2316.95,
+   "chg": -0.6676488412732707
   },
   "SOL": {
-   "price": 100.32,
-   "chg": -1.1660324928785528
+   "price": 101.27,
+   "chg": 0.4299516667504652
   },
   "XRP": {
-   "price": 1.27,
-   "chg": -1.938711234992432
+   "price": 1.29,
+   "chg": -0.1625015870371979
   },
   "GOLD": {
-   "price": 4023.3,
-   "chg": -3.0530120481927714
+   "price": 4030.7,
+   "chg": -2.87469879518073
   },
   "BRENT": {
    "price": 110.33,
@@ -34,16 +34,16 @@
    "chg": -0.7065332365724042
   },
   "DAX": {
-   "price": 25181.65,
-   "chg": -0.5455025855290119
+   "price": 25441.67,
+   "chg": 0.48144197202422134
   },
   "EURUSD": {
-   "price": 1.1213,
-   "chg": -0.026747503566326714
+   "price": 1.1193,
+   "chg": -0.2050641940085529
   },
   "US10Y": {
-   "price": 4.988,
-   "chg": -2.8816199376947016
+   "price": 4.99,
+   "chg": -2.4819230017588345
   }
  },
  "price_errors": [],
@@ -86,7 +86,7 @@
    "source": "alternative.me"
   },
   "stocks": {
-   "value": 21,
+   "value": 22,
    "label": "Extreme Angst",
    "history": [
     27,
@@ -116,9 +116,9 @@
     30,
     27,
     19,
-    21,
-    21,
-    21
+    22,
+    22,
+    22
    ],
    "source": "CNN"
   }
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 79760,
+   "price": 80100,
    "unit": "$",
    "triggered": false
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 79760,
+   "price": 80100,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2306.81,
+   "price": 2316.95,
    "unit": "$",
    "triggered": false
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 4023.3,
+   "price": 4030.7,
    "unit": "$",
    "triggered": true
   },
@@ -183,7 +183,7 @@
    "name": "US-Rendite 10J",
    "dir": "above",
    "level": 5.4,
-   "price": 4.988,
+   "price": 4.99,
    "unit": "%",
    "triggered": false
   }
