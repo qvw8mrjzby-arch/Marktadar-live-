@@ -1,29 +1,29 @@
 {
- "updated": "2026-10-30T21:06:17Z",
+ "updated": "2026-10-30T23:46:45Z",
  "prices": {
   "BTC": {
-   "price": 76838,
-   "chg": -2.5967907512608597
+   "price": 77226,
+   "chg": -1.0776282556971237
   },
   "ETH": {
-   "price": 2239.35,
-   "chg": -0.6896831757968153
+   "price": 2243.7,
+   "chg": -0.43339473257383115
   },
   "SOL": {
-   "price": 95.28,
-   "chg": -0.5127879284583335
+   "price": 96.16,
+   "chg": 0.14740521930995165
   },
   "XRP": {
    "price": 1.25,
-   "chg": 0.9626770536171382
+   "chg": 1.4736465089891062
   },
   "GOLD": {
    "price": 3884.9,
    "chg": -3.8010103011093532
   },
   "BRENT": {
-   "price": 112.27,
-   "chg": -3.056730852258016
+   "price": 112.33,
+   "chg": -3.0049218547621104
   },
   "SP500": {
    "price": 7580.07,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 76838,
+   "price": 77226,
    "unit": "$",
    "triggered": false
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 76838,
+   "price": 77226,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2239.35,
+   "price": 2243.7,
    "unit": "$",
    "triggered": true
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 112.27,
+   "price": 112.33,
    "unit": "$",
    "triggered": true
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 112.27,
+   "price": 112.33,
    "unit": "$",
    "triggered": false
   },
