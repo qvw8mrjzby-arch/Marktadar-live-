@@ -1,29 +1,29 @@
 {
- "updated": "2026-11-05T03:29:46Z",
+ "updated": "2026-11-05T07:26:44Z",
  "prices": {
   "BTC": {
-   "price": 80604,
-   "chg": 5.720792922945876
+   "price": 80546,
+   "chg": 3.057206825115535
   },
   "ETH": {
-   "price": 2429.35,
-   "chg": 8.331626498293867
+   "price": 2423.78,
+   "chg": 5.410703737610038
   },
   "SOL": {
-   "price": 96.6,
-   "chg": 6.235796317124542
+   "price": 95.97,
+   "chg": 3.0848593608898236
   },
   "XRP": {
    "price": 1.31,
-   "chg": 4.398800457750547
+   "chg": 2.6495256052261
   },
   "GOLD": {
-   "price": 4145.5,
-   "chg": 6.324860858190773
+   "price": 4133.6,
+   "chg": 4.131398629584848
   },
   "BRENT": {
-   "price": 93.97,
-   "chg": -20.120707242434545
+   "price": 94.67,
+   "chg": -9.640164169132381
   },
   "SP500": {
    "price": 7688.62,
@@ -38,8 +38,8 @@
    "chg": 2.854222802503248
   },
   "EURUSD": {
-   "price": 1.1263,
-   "chg": 0.7153715460967547
+   "price": 1.1252,
+   "chg": 0.6170079585084309
   },
   "US10Y": {
    "price": 4.894,
@@ -89,7 +89,6 @@
    "value": 27,
    "label": "Angst",
    "history": [
-    37,
     32,
     31,
     30,
@@ -118,6 +117,7 @@
     19,
     24,
     27,
+    27,
     27
    ],
    "source": "CNN"
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 80604,
+   "price": 80546,
    "unit": "$",
    "triggered": false
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 80604,
+   "price": 80546,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2429.35,
+   "price": 2423.78,
    "unit": "$",
    "triggered": false
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 93.97,
+   "price": 94.67,
    "unit": "$",
    "triggered": false
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 93.97,
+   "price": 94.67,
    "unit": "$",
    "triggered": true
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 4145.5,
+   "price": 4133.6,
    "unit": "$",
    "triggered": false
   },
