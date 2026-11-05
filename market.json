@@ -1,29 +1,29 @@
 {
- "updated": "2026-11-05T00:33:13Z",
+ "updated": "2026-11-05T03:29:46Z",
  "prices": {
   "BTC": {
-   "price": 80671,
-   "chg": 4.658133233500592
+   "price": 80604,
+   "chg": 5.720792922945876
   },
   "ETH": {
-   "price": 2426.98,
-   "chg": 7.13744749897626
+   "price": 2429.35,
+   "chg": 8.331626498293867
   },
   "SOL": {
-   "price": 95.78,
-   "chg": 4.197041543851126
+   "price": 96.6,
+   "chg": 6.235796317124542
   },
   "XRP": {
    "price": 1.31,
-   "chg": 3.576714214949497
+   "chg": 4.398800457750547
   },
   "GOLD": {
-   "price": 4089.1,
-   "chg": 4.878299007412346
+   "price": 4145.5,
+   "chg": 6.324860858190773
   },
   "BRENT": {
-   "price": 94.65,
-   "chg": -19.542672560353612
+   "price": 93.97,
+   "chg": -20.120707242434545
   },
   "SP500": {
    "price": 7688.62,
@@ -38,8 +38,8 @@
    "chg": 2.854222802503248
   },
   "EURUSD": {
-   "price": 1.1242,
-   "chg": 0.5275865152463588
+   "price": 1.1263,
+   "chg": 0.7153715460967547
   },
   "US10Y": {
    "price": 4.894,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 80671,
+   "price": 80604,
    "unit": "$",
    "triggered": false
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 80671,
+   "price": 80604,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2426.98,
+   "price": 2429.35,
    "unit": "$",
    "triggered": false
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 94.65,
+   "price": 93.97,
    "unit": "$",
    "triggered": false
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 94.65,
+   "price": 93.97,
    "unit": "$",
    "triggered": true
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 4089.1,
+   "price": 4145.5,
    "unit": "$",
    "triggered": false
   },
