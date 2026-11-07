@@ -1,21 +1,21 @@
 {
- "updated": "2026-11-07T16:26:27Z",
+ "updated": "2026-11-07T16:38:42Z",
  "prices": {
   "BTC": {
-   "price": 75726,
-   "chg": 0.09357909156077987
+   "price": 75698,
+   "chg": -0.010277067175118337
   },
   "ETH": {
-   "price": 2235.64,
-   "chg": 0.4015774255414481
+   "price": 2233.56,
+   "chg": 0.29384250166685955
   },
   "SOL": {
    "price": 89.54,
-   "chg": -0.9838591943307112
+   "chg": -0.9357890180659819
   },
   "XRP": {
    "price": 1.16,
-   "chg": -2.6710517452479476
+   "chg": -3.0013890071858347
   },
   "GOLD": {
    "price": 4074.9,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 75726,
+   "price": 75698,
    "unit": "$",
    "triggered": false
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 75726,
+   "price": 75698,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2235.64,
+   "price": 2233.56,
    "unit": "$",
    "triggered": true
   },
