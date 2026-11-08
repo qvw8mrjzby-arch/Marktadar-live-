@@ -1,29 +1,29 @@
 {
- "updated": "2026-11-08T23:11:09Z",
+ "updated": "2026-11-08T23:42:58Z",
  "prices": {
   "BTC": {
-   "price": 74713,
-   "chg": -1.2583881784382487
+   "price": 75117,
+   "chg": -0.7952057425349466
   },
   "ETH": {
-   "price": 2140.77,
-   "chg": -4.026913827594738
+   "price": 2140.14,
+   "chg": -4.13478059494608
   },
   "SOL": {
-   "price": 86.92,
-   "chg": -2.677139932940294
+   "price": 87.07,
+   "chg": -2.6151252527395794
   },
   "XRP": {
    "price": 1.12,
-   "chg": -3.519627120121189
+   "chg": -3.4406086547860393
   },
   "GOLD": {
-   "price": 4074.9,
-   "chg": 3.413359049842657
+   "price": 4074.7,
+   "chg": 3.408283423002745
   },
   "BRENT": {
-   "price": 98.32,
-   "chg": -5.096525096525095
+   "price": 97.47,
+   "chg": -5.916988416988412
   },
   "SP500": {
    "price": 7376.86,
@@ -38,8 +38,8 @@
    "chg": 0.008327455698919906
   },
   "EURUSD": {
-   "price": 1.1151,
-   "chg": -0.053777897284212894
+   "price": 1.1148,
+   "chg": -0.08066684592631379
   },
   "US10Y": {
    "price": 4.859,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 74713,
+   "price": 75117,
    "unit": "$",
    "triggered": true
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 74713,
+   "price": 75117,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2140.77,
+   "price": 2140.14,
    "unit": "$",
    "triggered": true
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 98.32,
+   "price": 97.47,
    "unit": "$",
    "triggered": false
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 98.32,
+   "price": 97.47,
    "unit": "$",
    "triggered": false
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 4074.9,
+   "price": 4074.7,
    "unit": "$",
    "triggered": false
   },
