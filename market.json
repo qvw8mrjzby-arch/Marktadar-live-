@@ -1,29 +1,29 @@
 {
- "updated": "2026-11-11T21:57:52Z",
+ "updated": "2026-11-11T23:06:25Z",
  "prices": {
   "BTC": {
-   "price": 74359,
-   "chg": 0.7842055654621252
+   "price": 73913,
+   "chg": 0.4920023722439545
   },
   "ETH": {
-   "price": 2070.69,
-   "chg": 0.7430743250681514
+   "price": 2058.02,
+   "chg": 0.7210096272152523
   },
   "SOL": {
-   "price": 84.56,
-   "chg": 1.444276644147147
+   "price": 83.5,
+   "chg": 0.9812840073145065
   },
   "XRP": {
-   "price": 1.061,
-   "chg": 0.0726375904106293
+   "price": 1.055,
+   "chg": -0.014665825756334034
   },
   "GOLD": {
-   "price": 3993.1,
-   "chg": -2.0074112248153364
+   "price": 3994.3,
+   "chg": -1.9779626493901636
   },
   "BRENT": {
-   "price": 92.64,
-   "chg": -5.777054515866553
+   "price": 92.63,
+   "chg": -5.787225386493078
   },
   "SP500": {
    "price": 7619.38,
@@ -38,8 +38,8 @@
    "chg": 0.8514366054194644
   },
   "EURUSD": {
-   "price": 1.1093,
-   "chg": -1.2639074321317278
+   "price": 1.1101,
+   "chg": -1.1927013796172559
   },
   "US10Y": {
    "price": 4.998,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 74359,
+   "price": 73913,
    "unit": "$",
    "triggered": true
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 74359,
+   "price": 73913,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2070.69,
+   "price": 2058.02,
    "unit": "$",
    "triggered": true
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 92.64,
+   "price": 92.63,
    "unit": "$",
    "triggered": false
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 92.64,
+   "price": 92.63,
    "unit": "$",
    "triggered": true
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 3993.1,
+   "price": 3994.3,
    "unit": "$",
    "triggered": true
   },
