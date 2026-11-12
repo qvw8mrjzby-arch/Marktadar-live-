@@ -1,29 +1,29 @@
 {
- "updated": "2026-11-12T02:59:02Z",
+ "updated": "2026-11-12T04:21:19Z",
  "prices": {
   "BTC": {
-   "price": 73753,
-   "chg": 0.2076867596955431
+   "price": 73710,
+   "chg": 0.352659751509381
   },
   "ETH": {
-   "price": 2055.73,
-   "chg": -0.09136583352646789
+   "price": 2051.92,
+   "chg": -0.22220267731532492
   },
   "SOL": {
-   "price": 83.28,
-   "chg": 0.1458089241197047
+   "price": 83.11,
+   "chg": 0.30407904653023576
   },
   "XRP": {
-   "price": 1.05,
-   "chg": -0.6373798966184032
+   "price": 1.045,
+   "chg": -0.5890009326854226
   },
   "GOLD": {
-   "price": 3984.0,
-   "chg": -2.2307295884561595
+   "price": 3983.9,
+   "chg": -2.2331836364082536
   },
   "BRENT": {
-   "price": 91.97,
-   "chg": -6.458502847843772
+   "price": 91.5,
+   "chg": -6.936533767290475
   },
   "SP500": {
    "price": 7619.38,
@@ -38,8 +38,8 @@
    "chg": 0.8514366054194644
   },
   "EURUSD": {
-   "price": 1.1077,
-   "chg": -1.3448521553259818
+   "price": 1.1078,
+   "chg": -1.3359458496615684
   },
   "US10Y": {
    "price": 4.998,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 73753,
+   "price": 73710,
    "unit": "$",
    "triggered": true
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 73753,
+   "price": 73710,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 2055.73,
+   "price": 2051.92,
    "unit": "$",
    "triggered": true
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 91.97,
+   "price": 91.5,
    "unit": "$",
    "triggered": false
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 91.97,
+   "price": 91.5,
    "unit": "$",
    "triggered": true
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 3984.0,
+   "price": 3983.9,
    "unit": "$",
    "triggered": true
   },
