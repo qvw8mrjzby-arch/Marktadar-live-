@@ -1,29 +1,29 @@
 {
- "updated": "2026-11-16T09:43:50Z",
+ "updated": "2026-11-16T12:05:48Z",
  "prices": {
   "BTC": {
-   "price": 64300,
-   "chg": -1.7249173986206492
+   "price": 64308,
+   "chg": -1.4626355283734906
   },
   "ETH": {
-   "price": 1795.91,
-   "chg": -1.7727181461992356
+   "price": 1802.29,
+   "chg": -0.8722240820464607
   },
   "SOL": {
-   "price": 70.86,
-   "chg": -1.6610039986731657
+   "price": 71.13,
+   "chg": -1.3812363135030756
   },
   "XRP": {
-   "price": 0.944764,
-   "chg": -2.1493280183724286
+   "price": 0.953198,
+   "chg": -0.8025246081653652
   },
   "GOLD": {
-   "price": 3859.9,
-   "chg": -3.514560679915013
+   "price": 3879.0,
+   "chg": -3.0371203599550034
   },
   "BRENT": {
-   "price": 92.25,
-   "chg": -0.549805950840887
+   "price": 94.84,
+   "chg": 2.2423458387235806
   },
   "SP500": {
    "price": 7561.67,
@@ -34,8 +34,8 @@
    "chg": 2.2654837805433203
   },
   "DAX": {
-   "price": 26740.62,
-   "chg": 1.8023625671417465
+   "price": 26744.02,
+   "chg": 1.8153064716857958
   },
   "EURUSD": {
    "price": 1.1012,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 64300,
+   "price": 64308,
    "unit": "$",
    "triggered": true
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 64300,
+   "price": 64308,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 1795.91,
+   "price": 1802.29,
    "unit": "$",
    "triggered": true
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 92.25,
+   "price": 94.84,
    "unit": "$",
    "triggered": false
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 92.25,
+   "price": 94.84,
    "unit": "$",
    "triggered": true
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 3859.9,
+   "price": 3879.0,
    "unit": "$",
    "triggered": true
   },
