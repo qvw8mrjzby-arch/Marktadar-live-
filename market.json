@@ -1,49 +1,49 @@
 {
- "updated": "2026-11-16T12:05:48Z",
+ "updated": "2026-11-16T20:29:07Z",
  "prices": {
   "BTC": {
-   "price": 64308,
-   "chg": -1.4626355283734906
+   "price": 65001,
+   "chg": 0.1615135090168596
   },
   "ETH": {
-   "price": 1802.29,
-   "chg": -0.8722240820464607
+   "price": 1818.61,
+   "chg": -0.352433771499632
   },
   "SOL": {
-   "price": 71.13,
-   "chg": -1.3812363135030756
+   "price": 71.36,
+   "chg": -0.3053110514844613
   },
   "XRP": {
-   "price": 0.953198,
-   "chg": -0.8025246081653652
+   "price": 0.957048,
+   "chg": -0.3390297705401525
   },
   "GOLD": {
-   "price": 3879.0,
-   "chg": -3.0371203599550034
+   "price": 3863.9,
+   "chg": -3.414573178352709
   },
   "BRENT": {
-   "price": 94.84,
-   "chg": 2.2423458387235806
+   "price": 92.29,
+   "chg": -0.50668391548081
   },
   "SP500": {
-   "price": 7561.67,
-   "chg": 2.5052664683890002
+   "price": 7412.55,
+   "chg": -1.8197495609236558
   },
   "NASDAQ": {
-   "price": 25136.273,
-   "chg": 2.2654837805433203
+   "price": 24507.98,
+   "chg": -2.950761766655552
   },
   "DAX": {
-   "price": 26744.02,
-   "chg": 1.8153064716857958
+   "price": 26598.64,
+   "chg": 1.2618403415058932
   },
   "EURUSD": {
-   "price": 1.1012,
-   "chg": -1.8713241846373352
+   "price": 1.1005,
+   "chg": -1.9337016574585641
   },
   "US10Y": {
-   "price": 5.154,
-   "chg": 5.962171052631571
+   "price": 5.121,
+   "chg": 2.769416014449133
   }
  },
  "price_errors": [],
@@ -86,7 +86,7 @@
    "source": "alternative.me"
   },
   "stocks": {
-   "value": 39,
+   "value": 30,
    "label": "Angst",
    "history": [
     45,
@@ -116,9 +116,9 @@
     37,
     36,
     40,
-    39,
-    39,
-    39
+    37,
+    30,
+    30
    ],
    "source": "CNN"
   }
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 64308,
+   "price": 65001,
    "unit": "$",
    "triggered": true
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 64308,
+   "price": 65001,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 1802.29,
+   "price": 1818.61,
    "unit": "$",
    "triggered": true
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 94.84,
+   "price": 92.29,
    "unit": "$",
    "triggered": false
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 94.84,
+   "price": 92.29,
    "unit": "$",
    "triggered": true
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 3879.0,
+   "price": 3863.9,
    "unit": "$",
    "triggered": true
   },
@@ -183,7 +183,7 @@
    "name": "US-Rendite 10J",
    "dir": "above",
    "level": 5.4,
-   "price": 5.154,
+   "price": 5.121,
    "unit": "%",
    "triggered": false
   }
