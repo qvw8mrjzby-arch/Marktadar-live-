@@ -1,29 +1,29 @@
 {
- "updated": "2026-11-26T03:11:33Z",
+ "updated": "2026-11-26T05:04:02Z",
  "prices": {
   "BTC": {
-   "price": 60615,
-   "chg": 2.2206256294118805
+   "price": 60906,
+   "chg": 3.0274587019491475
   },
   "ETH": {
-   "price": 1694.99,
-   "chg": 2.2051634672347826
+   "price": 1699.94,
+   "chg": 2.5016045417845016
   },
   "SOL": {
    "price": 71.09,
-   "chg": 3.212737373734869
+   "chg": 3.6142212822372004
   },
   "XRP": {
-   "price": 0.954179,
-   "chg": 3.931003736281408
+   "price": 0.958452,
+   "chg": 4.4393295922959455
   },
   "GOLD": {
-   "price": 3615.6,
-   "chg": 2.8503157535415546
+   "price": 3621.7,
+   "chg": 3.0238379700745277
   },
   "BRENT": {
-   "price": 90.7,
-   "chg": -2.0200929026682357
+   "price": 91.12,
+   "chg": -1.566382197256122
   },
   "SP500": {
    "price": 7182.78,
@@ -38,8 +38,8 @@
    "chg": -4.018108317298874
   },
   "EURUSD": {
-   "price": 1.0967,
-   "chg": -0.027347310847758433
+   "price": 1.0963,
+   "chg": -0.06381039197811411
   },
   "US10Y": {
    "price": 4.848,
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 60615,
+   "price": 60906,
    "unit": "$",
    "triggered": true
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 60615,
+   "price": 60906,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 1694.99,
+   "price": 1699.94,
    "unit": "$",
    "triggered": true
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 90.7,
+   "price": 91.12,
    "unit": "$",
    "triggered": false
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 90.7,
+   "price": 91.12,
    "unit": "$",
    "triggered": true
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 3615.6,
+   "price": 3621.7,
    "unit": "$",
    "triggered": true
   },
