@@ -1,29 +1,29 @@
 {
- "updated": "2026-11-26T23:54:14Z",
+ "updated": "2026-11-27T04:35:03Z",
  "prices": {
   "BTC": {
-   "price": 60452,
-   "chg": 0.11931313084825836
+   "price": 61435,
+   "chg": 0.7896644065129484
   },
   "ETH": {
-   "price": 1685.31,
-   "chg": -0.392285259973101
+   "price": 1731.23,
+   "chg": 1.7585891769454516
   },
   "SOL": {
-   "price": 70.93,
-   "chg": 0.714199618469288
+   "price": 72.8,
+   "chg": 2.3461909567589685
   },
   "XRP": {
-   "price": 0.942524,
-   "chg": 0.6224164185867491
+   "price": 0.959739,
+   "chg": 0.3630842111570325
   },
   "GOLD": {
-   "price": 3592.8,
-   "chg": 2.2017409114183373
+   "price": 3662.0,
+   "chg": 4.170222449792349
   },
   "BRENT": {
-   "price": 91.67,
-   "chg": -0.9722372258831102
+   "price": 92.27,
+   "chg": -0.3240790752943701
   },
   "SP500": {
    "price": 7182.78,
@@ -38,8 +38,8 @@
    "chg": -0.9750701093041436
   },
   "EURUSD": {
-   "price": 1.0973,
-   "chg": 0.027347310847769535
+   "price": 1.0975,
+   "chg": 0.02734232592052077
   },
   "US10Y": {
    "price": 4.848,
@@ -49,10 +49,9 @@
  "price_errors": [],
  "fng": {
   "crypto": {
-   "value": 11,
+   "value": 12,
    "label": "Extreme Angst",
    "history": [
-    51,
     51,
     30,
     30,
@@ -81,7 +80,8 @@
     11,
     11,
     13,
-    11
+    11,
+    12
    ],
    "source": "alternative.me"
   },
@@ -129,7 +129,7 @@
    "name": "Bitcoin",
    "dir": "below",
    "level": 75000,
-   "price": 60452,
+   "price": 61435,
    "unit": "$",
    "triggered": true
   },
@@ -138,7 +138,7 @@
    "name": "Bitcoin",
    "dir": "above",
    "level": 90000,
-   "price": 60452,
+   "price": 61435,
    "unit": "$",
    "triggered": false
   },
@@ -147,7 +147,7 @@
    "name": "Ethereum",
    "dir": "below",
    "level": 2300,
-   "price": 1685.31,
+   "price": 1731.23,
    "unit": "$",
    "triggered": true
   },
@@ -156,7 +156,7 @@
    "name": "Brent-Öl",
    "dir": "above",
    "level": 110,
-   "price": 91.67,
+   "price": 92.27,
    "unit": "$",
    "triggered": false
   },
@@ -165,7 +165,7 @@
    "name": "Brent-Öl",
    "dir": "below",
    "level": 95,
-   "price": 91.67,
+   "price": 92.27,
    "unit": "$",
    "triggered": true
   },
@@ -174,7 +174,7 @@
    "name": "Gold",
    "dir": "below",
    "level": 4000,
-   "price": 3592.8,
+   "price": 3662.0,
    "unit": "$",
    "triggered": true
   },
